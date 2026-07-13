@@ -12,11 +12,11 @@ class LoginPage extends ConsumerStatefulWidget {
 }
 
 class _LoginPageState extends ConsumerState<LoginPage> {
-  final _email = TextEditingController();
-  final _password = TextEditingController();
+  final _username = TextEditingController(text: 'superadmin');
+  final _password = TextEditingController(text: 'password');
   @override
   void dispose() {
-    _email.dispose();
+    _username.dispose();
     _password.dispose();
     super.dispose();
   }
@@ -38,12 +38,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         body: Padding(
             padding: const EdgeInsets.all(24),
             child: LoginForm(
-                emailController: _email,
+                usernameController: _username,
                 passwordController: _password,
                 isLoading: state.isSubmitting,
                 onSubmit: () => ref
                     .read(loginViewModelProvider.notifier)
                     .submit(
-                        email: _email.text.trim(), password: _password.text))));
+                        username: _username.text.trim(),
+                        password: _password.text))));
   }
 }

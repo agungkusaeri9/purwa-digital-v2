@@ -20,7 +20,10 @@ AuthToken _$AuthTokenFromJson(Map<String, dynamic> json) {
 
 /// @nodoc
 mixin _$AuthToken {
+  @JsonKey(name: 'token')
   String get accessToken => throw _privateConstructorUsedError;
+  String get expiresAt => throw _privateConstructorUsedError;
+  String get type => throw _privateConstructorUsedError;
 
   /// Serializes this AuthToken to a JSON map.
   Map<String, dynamic> toJson() => throw _privateConstructorUsedError;
@@ -37,7 +40,10 @@ abstract class $AuthTokenCopyWith<$Res> {
   factory $AuthTokenCopyWith(AuthToken value, $Res Function(AuthToken) then) =
       _$AuthTokenCopyWithImpl<$Res, AuthToken>;
   @useResult
-  $Res call({String accessToken});
+  $Res call(
+      {@JsonKey(name: 'token') String accessToken,
+      String expiresAt,
+      String type});
 }
 
 /// @nodoc
@@ -56,11 +62,21 @@ class _$AuthTokenCopyWithImpl<$Res, $Val extends AuthToken>
   @override
   $Res call({
     Object? accessToken = null,
+    Object? expiresAt = null,
+    Object? type = null,
   }) {
     return _then(_value.copyWith(
       accessToken: null == accessToken
           ? _value.accessToken
           : accessToken // ignore: cast_nullable_to_non_nullable
+              as String,
+      expiresAt: null == expiresAt
+          ? _value.expiresAt
+          : expiresAt // ignore: cast_nullable_to_non_nullable
+              as String,
+      type: null == type
+          ? _value.type
+          : type // ignore: cast_nullable_to_non_nullable
               as String,
     ) as $Val);
   }
@@ -74,7 +90,10 @@ abstract class _$$AuthTokenImplCopyWith<$Res>
       __$$AuthTokenImplCopyWithImpl<$Res>;
   @override
   @useResult
-  $Res call({String accessToken});
+  $Res call(
+      {@JsonKey(name: 'token') String accessToken,
+      String expiresAt,
+      String type});
 }
 
 /// @nodoc
@@ -91,11 +110,21 @@ class __$$AuthTokenImplCopyWithImpl<$Res>
   @override
   $Res call({
     Object? accessToken = null,
+    Object? expiresAt = null,
+    Object? type = null,
   }) {
     return _then(_$AuthTokenImpl(
       accessToken: null == accessToken
           ? _value.accessToken
           : accessToken // ignore: cast_nullable_to_non_nullable
+              as String,
+      expiresAt: null == expiresAt
+          ? _value.expiresAt
+          : expiresAt // ignore: cast_nullable_to_non_nullable
+              as String,
+      type: null == type
+          ? _value.type
+          : type // ignore: cast_nullable_to_non_nullable
               as String,
     ));
   }
@@ -104,17 +133,25 @@ class __$$AuthTokenImplCopyWithImpl<$Res>
 /// @nodoc
 @JsonSerializable()
 class _$AuthTokenImpl implements _AuthToken {
-  const _$AuthTokenImpl({required this.accessToken});
+  const _$AuthTokenImpl(
+      {@JsonKey(name: 'token') required this.accessToken,
+      required this.expiresAt,
+      required this.type});
 
   factory _$AuthTokenImpl.fromJson(Map<String, dynamic> json) =>
       _$$AuthTokenImplFromJson(json);
 
   @override
+  @JsonKey(name: 'token')
   final String accessToken;
+  @override
+  final String expiresAt;
+  @override
+  final String type;
 
   @override
   String toString() {
-    return 'AuthToken(accessToken: $accessToken)';
+    return 'AuthToken(accessToken: $accessToken, expiresAt: $expiresAt, type: $type)';
   }
 
   @override
@@ -123,12 +160,15 @@ class _$AuthTokenImpl implements _AuthToken {
         (other.runtimeType == runtimeType &&
             other is _$AuthTokenImpl &&
             (identical(other.accessToken, accessToken) ||
-                other.accessToken == accessToken));
+                other.accessToken == accessToken) &&
+            (identical(other.expiresAt, expiresAt) ||
+                other.expiresAt == expiresAt) &&
+            (identical(other.type, type) || other.type == type));
   }
 
   @JsonKey(includeFromJson: false, includeToJson: false)
   @override
-  int get hashCode => Object.hash(runtimeType, accessToken);
+  int get hashCode => Object.hash(runtimeType, accessToken, expiresAt, type);
 
   /// Create a copy of AuthToken
   /// with the given fields replaced by the non-null parameter values.
@@ -147,14 +187,21 @@ class _$AuthTokenImpl implements _AuthToken {
 }
 
 abstract class _AuthToken implements AuthToken {
-  const factory _AuthToken({required final String accessToken}) =
-      _$AuthTokenImpl;
+  const factory _AuthToken(
+      {@JsonKey(name: 'token') required final String accessToken,
+      required final String expiresAt,
+      required final String type}) = _$AuthTokenImpl;
 
   factory _AuthToken.fromJson(Map<String, dynamic> json) =
       _$AuthTokenImpl.fromJson;
 
   @override
+  @JsonKey(name: 'token')
   String get accessToken;
+  @override
+  String get expiresAt;
+  @override
+  String get type;
 
   /// Create a copy of AuthToken
   /// with the given fields replaced by the non-null parameter values.

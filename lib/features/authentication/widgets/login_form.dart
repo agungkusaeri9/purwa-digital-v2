@@ -3,11 +3,11 @@ import 'package:flutter/material.dart';
 class LoginForm extends StatelessWidget {
   const LoginForm(
       {super.key,
-      required this.emailController,
+      required this.usernameController,
       required this.passwordController,
       required this.onSubmit,
       required this.isLoading});
-  final TextEditingController emailController;
+  final TextEditingController usernameController;
   final TextEditingController passwordController;
   final VoidCallback onSubmit;
   final bool isLoading;
@@ -15,9 +15,9 @@ class LoginForm extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Column(children: [
         TextField(
-            controller: emailController,
-            keyboardType: TextInputType.emailAddress,
-            decoration: const InputDecoration(labelText: 'Email')),
+            controller: usernameController,
+            keyboardType: TextInputType.text,
+            decoration: const InputDecoration(labelText: 'Username')),
         const SizedBox(height: 12),
         TextField(
             controller: passwordController,

@@ -7,4 +7,6 @@ import '../services/auth_service.dart';
 final authServiceProvider =
     Provider<AuthService>((ref) => AuthService(ref.watch(apiClientProvider)));
 final authRepositoryProvider = Provider<AuthRepository>((ref) => AuthRepository(
-    ref.watch(authServiceProvider), ref.watch(secureStorageProvider)));
+    ref.watch(authServiceProvider),
+    ref.watch(secureStorageProvider),
+    ref.watch(preferencesProvider)));

@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:purwa_digital/features/splash/enums/splash_destination.dart';
 
 import '../../../core/errors/app_exception.dart';
 import '../models/login_request.dart';
@@ -16,12 +17,13 @@ class LoginViewModel extends Notifier<LoginState> {
   @override
   LoginState build() => const LoginState();
 
-  Future<void> submit({required String email, required String password}) async {
+  Future<void> submit(
+      {required String username, required String password}) async {
     state = const LoginState(isSubmitting: true);
     try {
       await ref
           .read(authRepositoryProvider)
-          .login(LoginRequest(email: email, password: password));
+          .login(LoginRequest(username: username, password: password));
       state = const LoginState(isSuccess: true);
     } on AppException catch (error) {
       state = LoginState(errorMessage: error.message);

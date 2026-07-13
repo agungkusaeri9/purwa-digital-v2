@@ -1,32 +1,35 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:purwa_digital/features/splash/viewmodels/splash_viewmodel.dart';
 
-class SplashPage extends StatefulWidget {
+import '../viewmodels/splash_state.dart';
+import '../viewmodels/splash_viewmodel.dart';
+import '../enums/splash_destination.dart';
+
+class SplashPage extends ConsumerStatefulWidget {
   const SplashPage({super.key});
 
   @override
-  State<SplashPage> createState() => _SplashPageState();
+  ConsumerState<SplashPage> createState() => _SplashPageState();
 }
 
-class _SplashPageState extends State<SplashPage>
+class _SplashPageState extends ConsumerState<SplashPage>
     with SingleTickerProviderStateMixin {
   late final AnimationController _progressController;
 
   @override
   void initState() {
     super.initState();
+
     _progressController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 5),
     )..forward();
-    _openOnboarding();
-  }
 
-  Future<void> _openOnboarding() async {
-    await Future<void>.delayed(const Duration(seconds: 5));
-    if (mounted) context.go('/onboarding');
+    Future.microtask(() {
+      ref.read(splashViewModelProvider.notifier).initialize();
+    });
   }
 
   @override
@@ -37,6 +40,28 @@ class _SplashPageState extends State<SplashPage>
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<SplashState>(
+      splashViewModelProvider,
+      (previous, next) {
+        switch (next.destination) {
+          case SplashDestination.home:
+            context.go('/home');
+            break;
+
+          case SplashDestination.login:
+            context.go('/login');
+            break;
+
+          case SplashDestination.onboarding:
+            context.go('/onboarding');
+            break;
+
+          case null:
+            break;
+        }
+      },
+    );
+
     final colorScheme = Theme.of(context).colorScheme;
 
     return Scaffold(
@@ -52,13 +77,6 @@ class _SplashPageState extends State<SplashPage>
                 decoration: BoxDecoration(
                   color: colorScheme.primary,
                   borderRadius: BorderRadius.circular(28),
-                  boxShadow: [
-                    BoxShadow(
-                      color: colorScheme.primary.withOpacity(0.24),
-                      blurRadius: 24,
-                      offset: const Offset(0, 10),
-                    ),
-                  ],
                 ),
                 child: Icon(
                   Icons.account_balance_wallet_rounded,
@@ -69,37 +87,14 @@ class _SplashPageState extends State<SplashPage>
               const SizedBox(height: 28),
               Text(
                 'Purwa Digital',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                      color: colorScheme.onSurface,
-                      fontWeight: FontWeight.w800,
-                    ),
-              ),
-              const SizedBox(height: 10),
-              Text(
-                'Kelola kebutuhan digital Anda\ndengan lebih mudah dan aman.',
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                      height: 1.5,
-                    ),
+                style: Theme.of(context).textTheme.headlineMedium,
               ),
               const Spacer(flex: 2),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(99),
-                child: AnimatedBuilder(
-                  animation: _progressController,
-                  builder: (_, __) => LinearProgressIndicator(
-                    value: _progressController.value,
-                    minHeight: 6,
-                  ),
+              AnimatedBuilder(
+                animation: _progressController,
+                builder: (_, __) => LinearProgressIndicator(
+                  value: _progressController.value,
                 ),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'v.1.0.0',
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                      color: colorScheme.onSurfaceVariant,
-                    ),
               ),
             ],
           ),
