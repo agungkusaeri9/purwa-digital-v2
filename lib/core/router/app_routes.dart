@@ -9,4 +9,5 @@ class AppRoutes {
   static const String wallet = '/wallet';
   static const String transactions = '/transactions';
   static const String activity = '/activity';
+  static const String pulsaForm = '/pulsa-form';
 }

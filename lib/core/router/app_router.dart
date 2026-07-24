@@ -12,6 +12,7 @@ import '../../features/settings/views/settings_page.dart';
 import '../../features/splash/views/splash_page.dart';
 import '../../features/transaction/views/transaction_page.dart';
 import '../../features/wallet/views/wallet_page.dart';
+import '../../features/ppob/views/pulsa_form_page.dart';
 import 'app_routes.dart';
 
 final appRouterProvider = Provider<GoRouter>(
@@ -29,6 +30,10 @@ final appRouterProvider = Provider<GoRouter>(
       GoRoute(
         path: AppRoutes.login,
         builder: (_, __) => const LoginPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.pulsaForm,
+        builder: (_, __) => const PulsaFormPage(),
       ),
       StatefulShellRoute.indexedStack(
         builder: (context, state, navigationShell) {

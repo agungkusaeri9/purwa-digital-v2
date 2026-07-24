@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:purwa_digital/features/splash/viewmodels/splash_viewmodel.dart';
 
 import '../viewmodels/splash_state.dart';
 import '../viewmodels/splash_viewmodel.dart';
@@ -16,16 +15,34 @@ class SplashPage extends ConsumerStatefulWidget {
 
 class _SplashPageState extends ConsumerState<SplashPage>
     with SingleTickerProviderStateMixin {
-  late final AnimationController _progressController;
+  late final AnimationController _animationController;
+  late final Animation<double> _fadeAnimation;
+  late final Animation<double> _scaleAnimation;
 
   @override
   void initState() {
     super.initState();
 
-    _progressController = AnimationController(
+    _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 5),
-    )..forward();
+      duration: const Duration(milliseconds: 1500),
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeIn),
+      ),
+    );
+
+    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _animationController,
+        curve: const Interval(0.0, 0.6, curve: Curves.easeOutBack),
+      ),
+    );
+
+    _animationController.forward();
 
     Future.microtask(() {
       ref.read(splashViewModelProvider.notifier).initialize();
@@ -34,7 +51,7 @@ class _SplashPageState extends ConsumerState<SplashPage>
 
   @override
   void dispose() {
-    _progressController.dispose();
+    _animationController.dispose();
     super.dispose();
   }
 
@@ -47,58 +64,133 @@ class _SplashPageState extends ConsumerState<SplashPage>
           case SplashDestination.home:
             context.go('/home');
             break;
-
           case SplashDestination.login:
             context.go('/login');
             break;
-
           case SplashDestination.onboarding:
             context.go('/onboarding');
             break;
-
           case null:
             break;
         }
       },
     );
 
-    final colorScheme = Theme.of(context).colorScheme;
+    final primaryColor = Theme.of(context).primaryColor;
 
     return Scaffold(
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 32, 24, 28),
-          child: Column(
-            children: [
-              const Spacer(),
-              Container(
-                width: 96,
-                height: 96,
-                decoration: BoxDecoration(
-                  color: colorScheme.primary,
-                  borderRadius: BorderRadius.circular(28),
-                ),
-                child: Icon(
-                  Icons.account_balance_wallet_rounded,
-                  color: colorScheme.onPrimary,
-                  size: 48,
-                ),
-              ),
-              const SizedBox(height: 28),
-              Text(
-                'Purwa Digital',
-                style: Theme.of(context).textTheme.headlineMedium,
-              ),
-              const Spacer(flex: 2),
-              AnimatedBuilder(
-                animation: _progressController,
-                builder: (_, __) => LinearProgressIndicator(
-                  value: _progressController.value,
-                ),
-              ),
-            ],
+      backgroundColor: Colors.white,
+      body: Stack(
+        children: [
+          // Background decorative elements (optional, kept clean here)
+          Center(
+            child: AnimatedBuilder(
+              animation: _animationController,
+              builder: (context, child) {
+                return Opacity(
+                  opacity: _fadeAnimation.value,
+                  child: Transform.scale(
+                    scale: _scaleAnimation.value,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        // Logo Container with soft glow
+                        Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                primaryColor.withOpacity(0.8),
+                                primaryColor,
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(30),
+                            boxShadow: [
+                              BoxShadow(
+                                color: primaryColor.withOpacity(0.3),
+                                blurRadius: 24,
+                                offset: const Offset(0, 12),
+                              ),
+                            ],
+                          ),
+                          child: const Icon(
+                            Icons.bolt_rounded, // A more dynamic icon for digital payments
+                            color: Colors.white,
+                            size: 56,
+                          ),
+                        ),
+                        const SizedBox(height: 32),
+                        // App Name
+                        Text(
+                          'Purwa Digital',
+                          style: const TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xff0F172A),
+                            letterSpacing: -0.5,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        // Subtitle
+                        Text(
+                          'Solusi Pembayaran Cepat & Aman',
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.grey.shade500,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            ),
           ),
-        ),
+          
+          // Bottom Loading Indicator
+          Positioned(
+            bottom: 48,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: AnimatedBuilder(
+                animation: _animationController,
+                builder: (context, child) {
+                  return Opacity(
+                    opacity: _fadeAnimation.value,
+                    child: Column(
+                      children: [
+                        SizedBox(
+                          width: 32,
+                          height: 32,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 3,
+                            valueColor: AlwaysStoppedAnimation<Color>(primaryColor),
+                            backgroundColor: primaryColor.withOpacity(0.1),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Memuat Data...',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey.shade400,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

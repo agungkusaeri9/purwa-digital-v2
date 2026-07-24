@@ -11,8 +11,12 @@ class AuthService {
       final response = await _apiClient.dio.post<Map<String, dynamic>>(
           '/api/auth/login',
           data: request.toJson());
-      final data = response.data?['data']['accessToken'];
-      return AuthToken.fromJson(data ?? const {});
+      final data = response.data?['data'];
+      if (data is Map<String, dynamic>) {
+        return AuthToken.fromJson(data);
+      }
+      return AuthToken(accessToken: '');
+
     } catch (error) {
       print(error);
       throw _apiClient.mapError(error);
