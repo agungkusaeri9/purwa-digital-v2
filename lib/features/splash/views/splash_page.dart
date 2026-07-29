@@ -62,7 +62,7 @@ class _SplashPageState extends ConsumerState<SplashPage>
       (previous, next) {
         switch (next.destination) {
           case SplashDestination.home:
-            context.go('/home');
+            context.go('/startup-pin');
             break;
           case SplashDestination.login:
             context.go('/login');
@@ -94,32 +94,28 @@ class _SplashPageState extends ConsumerState<SplashPage>
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        // Logo Container with soft glow
+                        // Logo Container
                         Container(
-                          width: 100,
-                          height: 100,
+                          width: 120,
+                          height: 120,
+                          padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                              colors: [
-                                primaryColor.withOpacity(0.8),
-                                primaryColor,
-                              ],
-                            ),
-                            borderRadius: BorderRadius.circular(30),
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(28),
                             boxShadow: [
                               BoxShadow(
-                                color: primaryColor.withOpacity(0.3),
+                                color: primaryColor.withOpacity(0.12),
                                 blurRadius: 24,
-                                offset: const Offset(0, 12),
+                                offset: const Offset(0, 8),
                               ),
                             ],
                           ),
-                          child: const Icon(
-                            Icons.bolt_rounded, // A more dynamic icon for digital payments
-                            color: Colors.white,
-                            size: 56,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(22),
+                            child: Image.asset(
+                              'assets/images/logo.png',
+                              fit: BoxFit.contain,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 32),

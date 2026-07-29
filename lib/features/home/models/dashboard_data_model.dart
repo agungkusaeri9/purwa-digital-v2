@@ -5,6 +5,8 @@ class DashboardStats {
   final int totalCustomers;
   final double revenueGrowth;
   final double transactionGrowth;
+  final double cashBalance;
+  final double digiflazzBalance;
 
   DashboardStats({
     required this.totalRevenue,
@@ -13,6 +15,8 @@ class DashboardStats {
     required this.totalCustomers,
     required this.revenueGrowth,
     required this.transactionGrowth,
+    this.cashBalance = 0.0,
+    this.digiflazzBalance = 0.0,
   });
 
   factory DashboardStats.fromJson(Map<String, dynamic> json) {
@@ -23,6 +27,8 @@ class DashboardStats {
       totalCustomers: (json['total_customers'] as num?)?.toInt() ?? 0,
       revenueGrowth: (json['revenue_growth'] as num?)?.toDouble() ?? 0.0,
       transactionGrowth: (json['transaction_growth'] as num?)?.toDouble() ?? 0.0,
+      cashBalance: (json['cash_balance'] as num?)?.toDouble() ?? 0.0,
+      digiflazzBalance: (json['digiflazz_balance'] as num?)?.toDouble() ?? 0.0,
     );
   }
 }

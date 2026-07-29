@@ -13,8 +13,8 @@ class LoginPage extends ConsumerStatefulWidget {
 }
 
 class _LoginPageState extends ConsumerState<LoginPage> {
-  final _username = TextEditingController(text: 'admin');
-  final _password = TextEditingController(text: 'password');
+  final _username = TextEditingController();
+  final _password = TextEditingController();
   bool _biometricAvailable = false;
 
   @override
@@ -82,7 +82,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   Widget build(BuildContext context) {
     ref.listen(loginViewModelProvider, (_, next) {
       if (next.isSuccess) {
-        context.go('/home');
+        context.go('/startup-pin');
       }
       if (next.errorMessage != null && next.errorMessage!.isNotEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -114,15 +114,26 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 // Logo & Welcoming Text
                 Center(
                   child: Container(
-                    padding: const EdgeInsets.all(16),
+                    width: 100,
+                    height: 100,
+                    padding: const EdgeInsets.all(4),
                     decoration: BoxDecoration(
-                      color: primaryColor.withOpacity(0.1),
-                      shape: BoxShape.circle,
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: primaryColor.withOpacity(0.1),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
                     ),
-                    child: Icon(
-                      Icons.shield,
-                      color: primaryColor,
-                      size: 48,
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(20),
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        fit: BoxFit.contain,
+                      ),
                     ),
                   ),
                 ),

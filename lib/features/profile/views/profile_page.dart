@@ -400,7 +400,6 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   Widget _buildMenuGroup(BuildContext context, {required List<Widget> children}) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: const Color(0xffE2E8F0)),
         boxShadow: [
@@ -411,8 +410,13 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
           ),
         ],
       ),
-      child: Column(
-        children: children,
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        clipBehavior: Clip.antiAlias,
+        child: Column(
+          children: children,
+        ),
       ),
     );
   }

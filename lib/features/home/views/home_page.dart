@@ -7,6 +7,16 @@ import 'package:intl/intl.dart';
 import 'package:purwa_digital/features/notification/viewmodels/notification_viewmodel.dart';
 import 'package:purwa_digital/features/notification/views/notification_page.dart';
 import 'package:shimmer/shimmer.dart';
+import '../../transaction/views/transaction_detail_page.dart';
+import '../../transaction/models/ppob_transaction_model.dart';
+import '../../../core/router/app_routes.dart';
+import '../../ppob/models/ppob_category_model.dart';
+import '../../ppob/viewmodels/pulsa_form_viewmodel.dart';
+
+final ppobCategoriesProvider = FutureProvider.autoDispose<List<PPOBCategoryModel>>((ref) async {
+  final service = ref.watch(ppobServiceProvider);
+  return service.getCategoriesList();
+});
 
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
@@ -21,10 +31,15 @@ class HomePage extends ConsumerWidget {
 
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
+      case 'sukses':
       case 'success':
         return const Color(0xff10B981); // Emerald Green
+      case 'gagal':
       case 'failed':
         return const Color(0xffEF4444); // Crimson Red
+      case 'processing':
+      case 'proses':
+      case 'pending':
       default:
         return const Color(0xffF59E0B); // Amber Yellow
     }
@@ -34,6 +49,24 @@ class HomePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final homeState = ref.watch(homeViewModelProvider);
     final notificationState = ref.watch(notificationViewModelProvider);
+    final categoriesAsync = ref.watch(ppobCategoriesProvider);
+    final categoriesList = categoriesAsync.value ?? [];
+
+    String? getLogo(String label) {
+      final labelLower = label.toLowerCase();
+      for (final cat in categoriesList) {
+        final catNameLower = cat.name.toLowerCase();
+        final catSlugLower = cat.slug.toLowerCase();
+        if (catNameLower == labelLower ||
+            catSlugLower == labelLower ||
+            (labelLower == 'paket data' && (catNameLower == 'data' || catSlugLower == 'data')) ||
+            (labelLower == 'token pln' && (catNameLower == 'pln' || catSlugLower == 'pln')) ||
+            (labelLower == 'game' && (catNameLower == 'games' || catSlugLower == 'games'))) {
+          return cat.logoUrl;
+        }
+      }
+      return null;
+    }
 
     ref.listen<HomeState>(
       homeViewModelProvider,
@@ -53,6 +86,7 @@ class HomePage extends ConsumerWidget {
       },
     );
 
+    final primaryColor = Theme.of(context).primaryColor;
     final profile = homeState.profile;
     final stats = homeState.dashboardData?.stats;
     final recentTx = homeState.dashboardData?.recentTransactions ?? [];
@@ -76,32 +110,54 @@ class HomePage extends ConsumerWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                      Row(
                         children: [
-                          Text(
-                            'Selamat Datang,',
-                            style: TextStyle(
-                              fontSize: 12,
-                              fontWeight: FontWeight.w500,
-                              color: Colors.grey.shade500,
+                          Container(
+                            width: 40,
+                            height: 40,
+                            padding: const EdgeInsets.all(4),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: const Color(0xffE2E8F0)),
+                            ),
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(8),
+                              child: Image.asset(
+                                'assets/images/logo.png',
+                                fit: BoxFit.contain,
+                              ),
                             ),
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            profile?.name ?? 'Pengguna',
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xff0F172A),
-                            ),
+                          const SizedBox(width: 10),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Purwa Digital',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: primaryColor,
+                                  letterSpacing: 0.2,
+                                ),
+                              ),
+                              const SizedBox(height: 1),
+                              Text(
+                                profile?.name ?? 'Pengguna',
+                                style: const TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xff0F172A),
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
                       GestureDetector(
                         onTap: () {
-                          Navigator.push(
-                            context,
+                          Navigator.of(context, rootNavigator: true).push(
                             MaterialPageRoute(
                               builder: (context) => const NotificationPage(),
                             ),
@@ -197,9 +253,9 @@ class HomePage extends ConsumerWidget {
                           ],
                         ),
                         const SizedBox(height: 10),
-                        // Menampilkan revenue sebagai representasi saldo agen
+                        // Menampilkan Saldo Kas operasional (sesuai menu Uang Kas)
                         Text(
-                          stats != null ? _formatRupiah(stats.totalRevenue) : 'Rp 0',
+                          stats != null ? _formatRupiah(stats.cashBalance) : 'Rp 0',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 26,
@@ -216,7 +272,8 @@ class HomePage extends ConsumerWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            _buildWalletInfo('Transaksi Hari Ini', stats != null ? stats.totalTransactions.toString() : '0'),
+                            _buildWalletInfo('Saldo Digiflazz', stats != null ? _formatRupiah(stats.digiflazzBalance) : 'Rp 0'),
+                            _buildWalletInfo('Transaksi', stats != null ? stats.totalTransactions.toString() : '0'),
                             _buildWalletInfo('Status Server', 'ONLINE', isSuccess: true),
                           ],
                         ),
@@ -249,70 +306,86 @@ class HomePage extends ConsumerWidget {
                         icon: Icons.phone_android_rounded,
                         label: 'Pulsa',
                         color: const Color(0xff3B82F6),
-                        onTap: () => context.push('/pulsa-form'),
+                        logoUrl: getLogo('Pulsa'),
+                        onTap: () => context.push('/pulsa-brand'),
                       ),
                       _buildPPOBItem(
                         context: context,
                         icon: Icons.wifi_tethering_rounded,
                         label: 'Paket Data',
                         color: const Color(0xff06B6D4),
-                        onTap: () => context.push('/transaction'),
+                        logoUrl: getLogo('Paket Data'),
+                        onTap: () => context.push('/data-brand'),
                       ),
                       _buildPPOBItem(
                         context: context,
                         icon: Icons.bolt_rounded,
                         label: 'Token PLN',
                         color: const Color(0xffF59E0B),
-                        onTap: () => context.push('/transaction'),
+                        logoUrl: getLogo('Token PLN'),
+                        onTap: () => context.push('/pln-menu'),
                       ),
                       _buildPPOBItem(
                         context: context,
                         icon: Icons.sports_esports_rounded,
-                        label: 'Voucher',
+                        label: 'Game',
                         color: const Color(0xff10B981),
-                        onTap: () => context.push('/transaction'),
+                        logoUrl: getLogo('Game'),
+                        onTap: () => context.push('/game-brand'),
                       ),
                       _buildPPOBItem(
                         context: context,
                         icon: Icons.account_balance_wallet_rounded,
                         label: 'E-Wallet',
                         color: const Color(0xff8B5CF6),
-                        onTap: () => context.push('/transaction'),
+                        logoUrl: getLogo('E-Wallet'),
+                        onTap: () {},
+                        isSoon: true,
                       ),
                       _buildPPOBItem(
                         context: context,
                         icon: Icons.monitor_heart_rounded,
                         label: 'BPJS',
                         color: const Color(0xff14B8A6),
-                        onTap: () => context.push('/transaction'),
+                        logoUrl: getLogo('BPJS'),
+                        onTap: () {},
+                        isSoon: true,
                       ),
                       _buildPPOBItem(
                         context: context,
                         icon: Icons.water_drop_rounded,
                         label: 'PDAM',
                         color: const Color(0xff3B82F6),
-                        onTap: () => context.push('/transaction'),
+                        logoUrl: getLogo('PDAM'),
+                        onTap: () {},
+                        isSoon: true,
                       ),
                       _buildPPOBItem(
                         context: context,
                         icon: Icons.tv_rounded,
                         label: 'Internet & TV',
                         color: const Color(0xffF43F5E),
-                        onTap: () => context.push('/transaction'),
+                        logoUrl: getLogo('Internet & TV'),
+                        onTap: () {},
+                        isSoon: true,
                       ),
                       _buildPPOBItem(
                         context: context,
                         icon: Icons.receipt_long_rounded,
                         label: 'Angsuran',
                         color: const Color(0xffF59E0B),
-                        onTap: () => context.push('/transaction'),
+                        logoUrl: getLogo('Angsuran'),
+                        onTap: () {},
+                        isSoon: true,
                       ),
                       _buildPPOBItem(
                         context: context,
                         icon: Icons.grid_view_rounded,
                         label: 'Lainnya',
                         color: const Color(0xff64748B),
-                        onTap: () => context.push('/transaction'),
+                        logoUrl: getLogo('Lainnya'),
+                        onTap: () {},
+                        isSoon: true,
                       ),
                     ],
                   ),
@@ -332,7 +405,7 @@ class HomePage extends ConsumerWidget {
                         ),
                       ),
                       GestureDetector(
-                        onTap: () => context.push('/transaction'),
+                        onTap: () => context.go(AppRoutes.transactions),
                         child: Text(
                           'Lihat Semua',
                           style: TextStyle(
@@ -368,118 +441,139 @@ class HomePage extends ConsumerWidget {
                       itemCount: recentTx.length > 5 ? 5 : recentTx.length,
                       itemBuilder: (context, index) {
                         final tx = recentTx[index];
-                        return Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: const Color(0xffF8FAFC), width: 1.5),
-                            boxShadow: [
-                              BoxShadow(
-                                color: const Color(0xff0F172A).withOpacity(0.02),
-                                blurRadius: 10,
-                                offset: const Offset(0, 4),
+                        return GestureDetector(
+                          onTap: () {
+                            context.push(
+                              AppRoutes.transactionDetail,
+                              extra: PPOBTransactionModel(
+                                id: tx.id,
+                                refId: tx.refId,
+                                buyerSkuCode: tx.buyerSkuCode,
+                                productName: tx.productName,
+                                customerNo: tx.customerNo,
+                                price: tx.price,
+                                markupPrice: tx.sellingPrice - tx.price,
+                                sellingPrice: tx.sellingPrice,
+                                status: tx.status,
+                                createdAt: tx.createdAt,
+                                category: tx.category,
+                                brand: tx.brand,
                               ),
-                            ],
-                          ),
-                          child: Row(
-                            children: [
-                              // 1. Icon Status / Kategori
-                              Container(
-                                padding: const EdgeInsets.all(10),
-                                decoration: BoxDecoration(
-                                  color: _getStatusColor(tx.status).withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(12),
+                            );
+                          },
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 6),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: const Color(0xffF8FAFC), width: 1.5),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xff0F172A).withOpacity(0.02),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
                                 ),
-                                child: Icon(
-                                  tx.status.toLowerCase() == 'success'
-                                      ? Icons.check_circle_rounded
-                                      : tx.status.toLowerCase() == 'failed'
-                                          ? Icons.cancel_rounded
-                                          : Icons.schedule_rounded,
-                                  size: 20,
-                                  color: _getStatusColor(tx.status),
+                              ],
+                            ),
+                            child: Row(
+                              children: [
+                                // 1. Icon Status / Kategori
+                                Container(
+                                  padding: const EdgeInsets.all(10),
+                                  decoration: BoxDecoration(
+                                    color: _getStatusColor(tx.status).withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(
+                                    tx.status.toLowerCase() == 'success' || tx.status.toLowerCase() == 'sukses'
+                                        ? Icons.check_circle_rounded
+                                        : tx.status.toLowerCase() == 'failed' || tx.status.toLowerCase() == 'gagal'
+                                            ? Icons.cancel_rounded
+                                            : Icons.schedule_rounded,
+                                    size: 20,
+                                    color: _getStatusColor(tx.status),
+                                  ),
                                 ),
-                              ),
-                              const SizedBox(width: 12),
-                              
-                              // 2. Info Transaksi (Title & Subtitle)
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    if (tx.category != null && tx.category!.isNotEmpty) ...[
+                                const SizedBox(width: 12),
+                                
+                                // 2. Info Transaksi (Title & Subtitle)
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      if (tx.category != null && tx.category!.isNotEmpty) ...[
+                                        Text(
+                                          tx.category!.toUpperCase(),
+                                          style: const TextStyle(
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.w800,
+                                            color: Color(0xff3B82F6),
+                                            letterSpacing: 0.5,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                      ],
                                       Text(
-                                        tx.category!.toUpperCase(),
+                                        tx.productName,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
                                         style: const TextStyle(
-                                          fontSize: 9,
-                                          fontWeight: FontWeight.w800,
-                                          color: Color(0xff3B82F6),
-                                          letterSpacing: 0.5,
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 13,
+                                          color: Color(0xff1E293B),
+                                          letterSpacing: 0.1,
                                         ),
                                       ),
-                                      const SizedBox(height: 2),
+                                      const SizedBox(height: 4),
+                                      Text(
+                                        tx.customerNo,
+                                        style: const TextStyle(
+                                          fontSize: 11,
+                                          color: Color(0xff64748B),
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
                                     ],
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+
+                                // 3. Nominal & Status Badge
+                                Column(
+                                  crossAxisAlignment: CrossAxisAlignment.end,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
                                     Text(
-                                      tx.productName,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
+                                      _formatRupiah(tx.sellingPrice),
                                       style: const TextStyle(
-                                        fontWeight: FontWeight.w600,
-                                        fontSize: 13, // Diperkecil agar lebih elegan
-                                        color: Color(0xff1E293B),
-                                        letterSpacing: 0.1,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 13,
+                                        color: Color(0xff0F172A),
                                       ),
                                     ),
-                                    const SizedBox(height: 4),
-                                    Text(
-                                      tx.customerNo,
-                                      style: const TextStyle(
-                                        fontSize: 11,
-                                        color: Color(0xff64748B), // Slate 500
-                                        fontWeight: FontWeight.w500,
+                                    const SizedBox(height: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      decoration: BoxDecoration(
+                                        color: _getStatusColor(tx.status).withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: Text(
+                                        tx.status.toUpperCase(),
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 9,
+                                          letterSpacing: 0.5,
+                                          color: _getStatusColor(tx.status),
+                                        ),
                                       ),
                                     ),
                                   ],
                                 ),
-                              ),
-                              const SizedBox(width: 8),
-
-                              // 3. Nominal & Status Badge
-                              Column(
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Text(
-                                    _formatRupiah(tx.sellingPrice),
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 13,
-                                      color: Color(0xff0F172A),
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                                    decoration: BoxDecoration(
-                                      color: _getStatusColor(tx.status).withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                    child: Text(
-                                      tx.status.toUpperCase(),
-                                      style: TextStyle(
-                                        fontWeight: FontWeight.w800,
-                                        fontSize: 9,
-                                        letterSpacing: 0.5,
-                                        color: _getStatusColor(tx.status),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
+                              ],
+                            ),
                           ),
                         );
                       },
@@ -521,23 +615,65 @@ class HomePage extends ConsumerWidget {
     required String label,
     required Color color,
     required VoidCallback onTap,
+    bool isSoon = false,
+    String? logoUrl,
   }) {
+    final hasLogo = logoUrl != null && logoUrl.isNotEmpty;
     return GestureDetector(
-      onTap: onTap,
+      onTap: isSoon ? null : onTap,
       child: Column(
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.08),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: color.withOpacity(0.15)),
-            ),
-            child: Icon(
-              icon,
-              color: color,
-              size: 22,
-            ),
+          Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                padding: hasLogo ? const EdgeInsets.all(8) : const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: isSoon ? Colors.grey.shade100 : color.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: isSoon ? Colors.grey.shade200 : color.withOpacity(0.15)),
+                ),
+                child: hasLogo
+                    ? Image.network(
+                        logoUrl,
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) => Icon(
+                          icon,
+                          color: isSoon ? Colors.grey.shade400 : color,
+                          size: 22,
+                        ),
+                      )
+                    : Icon(
+                        icon,
+                        color: isSoon ? Colors.grey.shade400 : color,
+                        size: 22,
+                      ),
+              ),
+              if (isSoon)
+                Positioned(
+                  top: -4,
+                  right: -4,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: const Color(0xffF1F5F9),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: const Color(0xffCBD5E1), width: 0.5),
+                    ),
+                    child: const Text(
+                      'SOON',
+                      style: TextStyle(
+                        fontSize: 6,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.grey,
+                        letterSpacing: 0.2,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
           ),
           const SizedBox(height: 8),
           Text(
@@ -545,10 +681,10 @@ class HomePage extends ConsumerWidget {
             textAlign: TextAlign.center,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 9,
               fontWeight: FontWeight.w700,
-              color: Color(0xff334155),
+              color: isSoon ? Colors.grey.shade400 : const Color(0xff334155),
             ),
           ),
         ],

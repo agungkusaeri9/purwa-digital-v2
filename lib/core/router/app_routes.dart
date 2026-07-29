@@ -10,4 +10,13 @@ class AppRoutes {
   static const String transactions = '/transactions';
   static const String activity = '/activity';
   static const String pulsaForm = '/pulsa-form';
+  static const String pulsaBrand = '/pulsa-brand';
+  static const String dataForm = '/data-form';
+  static const String dataBrand = '/data-brand';
+  static const String plnMenu = '/pln-menu';
+  static const String plnForm = '/pln-form';
+  static const String gameBrand = '/game-brand';
+  static const String gameForm = '/game-form';
+  static const String transactionDetail = '/transaction-detail';
+  static const String startupPin = '/startup-pin';
 }

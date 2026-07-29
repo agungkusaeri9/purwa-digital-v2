@@ -5,9 +5,13 @@ import 'package:intl/intl.dart';
 import '../viewmodels/pulsa_form_viewmodel.dart';
 import '../models/ppob_product_model.dart';
 import 'widgets/transaction_status_modal.dart';
+import 'widgets/ppob_confirmation_sheet.dart';
+import 'widgets/pin_input_sheet.dart';
+
 
 class PulsaFormPage extends ConsumerStatefulWidget {
-  const PulsaFormPage({super.key});
+  final String? initialBrand;
+  const PulsaFormPage({super.key, this.initialBrand});
 
   @override
   ConsumerState<PulsaFormPage> createState() => _PulsaFormPageState();
@@ -15,6 +19,16 @@ class PulsaFormPage extends ConsumerStatefulWidget {
 
 class _PulsaFormPageState extends ConsumerState<PulsaFormPage> {
   final TextEditingController _phoneController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.initialBrand != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        ref.read(pulsaFormViewModelProvider.notifier).setInitialBrand(widget.initialBrand!);
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -56,6 +70,7 @@ class _PulsaFormPageState extends ConsumerState<PulsaFormPage> {
   }
 
   void _showConfirmationSheet(BuildContext context, PPOBProductModel product) {
+
     final viewModel = ref.read(pulsaFormViewModelProvider.notifier);
     final state = ref.read(pulsaFormViewModelProvider);
 
@@ -66,101 +81,35 @@ class _PulsaFormPageState extends ConsumerState<PulsaFormPage> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
-      builder: (context) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Konfirmasi Transaksi',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xff0F172A),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.close_rounded, size: 20),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xffF8FAFC),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xffE2E8F0)),
-                ),
-                child: Column(
-                  children: [
-                    _buildConfirmRow('Nomor HP', state.phoneNumber),
-                    const Divider(height: 20, color: Color(0xffE2E8F0)),
-                    _buildConfirmRow('Provider', product.brand.toUpperCase()),
-                    const Divider(height: 20, color: Color(0xffE2E8F0)),
-                    _buildConfirmRow('Nominal Pulsa', product.productName),
-                    const Divider(height: 20, color: Color(0xffE2E8F0)),
-                    _buildConfirmRow('Harga', _formatRupiah(product.sellingPrice)),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24),
-              ElevatedButton(
-                onPressed: () async {
-                  Navigator.pop(context); // Close Confirmation Sheet
-                  
-                  // Show Polling Modal Immediately when submitting
-                  final refId = await viewModel.submitTransaction();
-                  if (refId != null && context.mounted) {
-                    showDialog(
-                      context: context,
-                      barrierDismissible: false,
-                      builder: (context) => TransactionStatusModal(refId: refId),
-                    );
-                  }
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Theme.of(context).primaryColor,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  elevation: 0,
-                ),
-                child: const Text(
-                  'Bayar Sekarang',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                ),
-              ),
-            ],
-          ),
+      builder: (sheetContext) {
+        return PPOBConfirmationSheet(
+          phoneNumber: state.phoneNumber,
+          provider: product.brand,
+          productLabel: 'Nominal Pulsa',
+          productValue: product.productName,
+          basePrice: product.basePrice,
+          markupPrice: product.markupPrice,
+          sellingPrice: product.sellingPrice,
+          onConfirm: () async {
+            Navigator.pop(sheetContext); // Close Confirmation Sheet
+            await Future.delayed(const Duration(milliseconds: 100));
+            if (!context.mounted) return;
+
+            final pin = await PinInputSheet.show(context);
+            if (pin != null && pin.isNotEmpty && context.mounted) {
+              final createFuture = viewModel.submitTransaction(pin: pin);
+              showDialog(
+                context: context,
+                barrierDismissible: false,
+                builder: (_) => TransactionStatusModal(createFuture: createFuture),
+              );
+            }
+          },
         );
       },
     );
   }
 
-  Widget _buildConfirmRow(String label, String value) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(fontSize: 13, color: Color(0xff64748B), fontWeight: FontWeight.w500),
-        ),
-        Text(
-          value,
-          style: const TextStyle(fontSize: 13, color: Color(0xff0F172A), fontWeight: FontWeight.bold),
-        ),
-      ],
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -265,34 +214,7 @@ class _PulsaFormPageState extends ConsumerState<PulsaFormPage> {
                             ),
                           ),
                         ),
-                        if (state.providerName.isNotEmpty) ...[
-                          const Divider(height: 20, color: Color(0xffF1F5F9)),
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                decoration: BoxDecoration(
-                                  color: primaryColor.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  state.providerName.toUpperCase(),
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w800,
-                                    color: primaryColor,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
-                              const Text(
-                                'Provider Terdeteksi',
-                                style: TextStyle(fontSize: 11, color: Color(0xff64748B)),
-                              ),
-                            ],
-                          ),
-                        ],
+
                       ],
                     ),
                   ),
@@ -401,45 +323,66 @@ class _PulsaFormPageState extends ConsumerState<PulsaFormPage> {
                   ),
                 ],
               ),
-              child: Row(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text(
-                          'Total Bayar',
-                          style: TextStyle(fontSize: 11, color: Color(0xff64748B)),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          _formatRupiah(state.selectedProduct!.sellingPrice),
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w900,
-                            color: primaryColor,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  ElevatedButton(
-                    onPressed: () => _showConfirmationSheet(context, state.selectedProduct!),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: primaryColor,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        'Harga Dasar: ${_formatRupiah(state.selectedProduct!.basePrice)}',
+                        style: const TextStyle(fontSize: 11, color: Color(0xff64748B)),
                       ),
-                      elevation: 0,
-                    ),
-                    child: const Text(
-                      'Lanjut',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
+                      Text(
+                        'Biaya Admin: ${_formatRupiah(state.selectedProduct!.markupPrice)}',
+                        style: const TextStyle(fontSize: 11, color: Color(0xff64748B)),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 16, color: Color(0xffF1F5F9)),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Text(
+                              'Total Bayar',
+                              style: TextStyle(fontSize: 11, color: Color(0xff64748B)),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              _formatRupiah(state.selectedProduct!.sellingPrice),
+                              style: TextStyle(
+                                  fontSize: 16,
+                                  fontWeight: FontWeight.w900,
+                                  color: primaryColor,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      ElevatedButton(
+                        onPressed: state.phoneNumber.length >= 10
+                            ? () => _showConfirmationSheet(context, state.selectedProduct!)
+                            : null,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: primaryColor,
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          elevation: 0,
+                        ),
+                        child: const Text(
+                          'Lanjut',
+                          style: TextStyle(fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -463,11 +406,6 @@ class PhoneNumberTextInputFormatter extends TextInputFormatter {
     }
 
     var digits = text.replaceAll(RegExp(r'\D'), '');
-
-    // Auto prepend 8 if typing 0
-    if (digits == '0') {
-      digits = '8';
-    }
 
     if (digits.startsWith('62')) {
       digits = digits.substring(2);

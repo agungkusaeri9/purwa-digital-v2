@@ -4,8 +4,9 @@ import 'package:intl/intl.dart';
 import 'package:shimmer/shimmer.dart';
 import '../viewmodels/transaction_state.dart';
 import '../viewmodels/transaction_viewmodel.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/router/app_routes.dart';
 import '../models/ppob_transaction_model.dart';
-import 'transaction_detail_page.dart';
 
 class TransactionPage extends ConsumerStatefulWidget {
   const TransactionPage({super.key});
@@ -16,6 +17,14 @@ class TransactionPage extends ConsumerStatefulWidget {
 
 class _TransactionPageState extends ConsumerState<TransactionPage> {
   final TextEditingController _searchController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(transactionViewModelProvider.notifier).loadInitialData();
+    });
+  }
 
   @override
   void dispose() {
@@ -29,6 +38,20 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
       symbol: 'Rp ',
       decimalDigits: 0,
     ).format(amount);
+  }
+
+  String _formatIndonesianDateOnly(String utcString) {
+    final dateTime = DateTime.tryParse(utcString);
+    if (dateTime == null) return utcString;
+    final local = dateTime.toLocal();
+    final months = [
+      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+    ];
+    final day = local.day.toString();
+    final month = months[local.month - 1];
+    final year = local.year;
+    return '$day $month $year';
   }
 
   Color _getStatusColor(String status) {
@@ -212,6 +235,23 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
 
     final hasActiveFilter = state.filter.category.isNotEmpty || state.filter.status.isNotEmpty;
 
+    // Group transactions by date
+    final Map<String, List<PPOBTransactionModel>> groupedTransactions = {};
+    for (final tx in state.transactions) {
+      final dateKey = _formatIndonesianDateOnly(tx.createdAt);
+      if (!groupedTransactions.containsKey(dateKey)) {
+        groupedTransactions[dateKey] = [];
+      }
+      groupedTransactions[dateKey]!.add(tx);
+    }
+
+    // Flatten to a list of header and transaction items
+    final List<dynamic> listItems = [];
+    groupedTransactions.forEach((date, txs) {
+      listItems.add(date);
+      listItems.addAll(txs);
+    });
+
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
@@ -257,71 +297,39 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
             // 1. Search Bar & Quick Filter Trigger Button
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: _searchController,
-                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-                      onSubmitted: (value) => viewModel.setSearch(value.trim()),
-                      decoration: InputDecoration(
-                        hintText: 'Cari No Pelanggan, Ref ID...',
-                        hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
-                        prefixIcon: const Icon(Icons.search_rounded, size: 20),
-                        suffixIcon: _searchController.text.isNotEmpty
-                            ? IconButton(
-                                icon: const Icon(Icons.clear_rounded, size: 18),
-                                onPressed: () {
-                                  _searchController.clear();
-                                  viewModel.setSearch('');
-                                },
-                              )
-                            : null,
-                        filled: true,
-                        fillColor: const Color(0xffF8FAFC),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: const BorderSide(color: Color(0xffE2E8F0)),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: const BorderSide(color: Color(0xffE2E8F0)),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(16),
-                          borderSide: BorderSide(color: Theme.of(context).primaryColor, width: 1.5),
-                        ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  InkWell(
-                    onTap: () => _showFilterModal(context, state, viewModel),
+              child: TextField(
+                controller: _searchController,
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                onSubmitted: (value) => viewModel.setSearch(value.trim()),
+                decoration: InputDecoration(
+                  hintText: 'Cari No Pelanggan, Ref ID...',
+                  hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
+                  prefixIcon: const Icon(Icons.search_rounded, size: 20),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear_rounded, size: 18),
+                          onPressed: () {
+                            _searchController.clear();
+                            viewModel.setSearch('');
+                          },
+                        )
+                      : null,
+                  filled: true,
+                  fillColor: const Color(0xffF8FAFC),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(16),
-                    child: Container(
-                      padding: const EdgeInsets.all(14),
-                      decoration: BoxDecoration(
-                        color: hasActiveFilter
-                            ? Theme.of(context).primaryColor.withOpacity(0.1)
-                            : const Color(0xffF8FAFC),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: hasActiveFilter
-                              ? Theme.of(context).primaryColor
-                              : const Color(0xffE2E8F0),
-                        ),
-                      ),
-                      child: Icon(
-                        Icons.filter_list_rounded,
-                        color: hasActiveFilter
-                            ? Theme.of(context).primaryColor
-                            : const Color(0xff64748B),
-                        size: 20,
-                      ),
-                    ),
+                    borderSide: const BorderSide(color: Color(0xffE2E8F0)),
                   ),
-                ],
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: const BorderSide(color: Color(0xffE2E8F0)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                    borderSide: BorderSide(color: Theme.of(context).primaryColor, width: 1.5),
+                  ),
+                ),
               ),
             ),
             const SizedBox(height: 8),
@@ -377,9 +385,24 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
                         )
                       : ListView.builder(
                           padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
-                          itemCount: state.transactions.length,
+                          itemCount: listItems.length,
                           itemBuilder: (context, index) {
-                            final tx = state.transactions[index];
+                            final item = listItems[index];
+                            if (item is String) {
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 14.0, bottom: 6.0),
+                                child: Text(
+                                  item,
+                                  style: const TextStyle(
+                                    fontSize: 11.5,
+                                    fontWeight: FontWeight.w800,
+                                    color: Color(0xff64748B),
+                                    letterSpacing: 0.2,
+                                  ),
+                                ),
+                              );
+                            }
+                            final tx = item as PPOBTransactionModel;
                             return _buildTransactionCard(context, tx);
                           },
                         ),
@@ -400,15 +423,10 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
 
     return GestureDetector(
       onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => TransactionDetailPage(transaction: tx),
-          ),
-        );
+        context.push(AppRoutes.transactionDetail, extra: tx);
       },
       child: Container(
-        margin: const EdgeInsets.only(bottom: 12.0),
+        margin: const EdgeInsets.only(bottom: 6.0),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
@@ -422,7 +440,7 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
           ],
         ),
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(12.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

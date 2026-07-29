@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:purwa_digital/features/authentication/providers/auth_providers.dart';
-import 'package:purwa_digital/features/splash/enums/splash_destination.dart';
 import 'package:purwa_digital/features/splash/viewmodels/splash_state.dart';
 
 class SplashViewModel extends Notifier<SplashState> {

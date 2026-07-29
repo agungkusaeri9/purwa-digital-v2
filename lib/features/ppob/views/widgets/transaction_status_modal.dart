@@ -1,14 +1,18 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
 import '../../viewmodels/pulsa_form_viewmodel.dart';
+import '../../../main/viewmodel/main_viewmodel.dart';
+import '../../../transaction/viewmodels/transaction_viewmodel.dart';
 import '../../../transaction/models/ppob_transaction_model.dart';
+import '../../../../core/router/app_routes.dart';
 
 class TransactionStatusModal extends ConsumerStatefulWidget {
-  final String refId;
+  final Future<String?> createFuture;
 
-  const TransactionStatusModal({super.key, required this.refId});
+  const TransactionStatusModal({super.key, required this.createFuture});
 
   @override
   ConsumerState<TransactionStatusModal> createState() =>
@@ -16,30 +20,58 @@ class TransactionStatusModal extends ConsumerStatefulWidget {
 }
 
 class _TransactionStatusModalState extends ConsumerState<TransactionStatusModal> {
-  late Timer _timer;
+  Timer? _timer;
   PPOBTransactionModel? _transaction;
   bool _isLoading = true;
   String _errorMessage = '';
+  String? _refId;
 
   @override
   void initState() {
     super.initState();
-    _checkStatus();
-    // Poll every 2 seconds
-    _timer = Timer.periodic(const Duration(seconds: 2), (timer) {
-      _checkStatus();
-    });
+    _startTransactionCreation();
   }
 
   @override
   void dispose() {
-    _timer.cancel();
+    _timer?.cancel();
     super.dispose();
   }
 
-  Future<void> _checkStatus() async {
+  Future<void> _startTransactionCreation() async {
     try {
-      final tx = await ref.read(ppobServiceProvider).getTransactionByRef(widget.refId);
+      final resolvedRefId = await widget.createFuture;
+      if (!mounted) return;
+      if (resolvedRefId == null) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Gagal membuat transaksi. Silakan coba lagi.';
+        });
+        return;
+      }
+      setState(() {
+        _refId = resolvedRefId;
+      });
+      // Start polling
+      _checkStatus();
+      _timer = Timer.periodic(const Duration(seconds: 2), (timer) {
+        _checkStatus();
+      });
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = e.toString().replaceAll('Exception: ', '');
+        });
+      }
+    }
+  }
+
+  Future<void> _checkStatus() async {
+    final currentRefId = _refId;
+    if (currentRefId == null) return;
+    try {
+      final tx = await ref.read(ppobServiceProvider).getTransactionByRef(currentRefId);
       if (mounted) {
         setState(() {
           _transaction = tx;
@@ -49,7 +81,7 @@ class _TransactionStatusModalState extends ConsumerState<TransactionStatusModal>
         // If transaction completed (Success / Failed), stop polling
         final status = tx.status.toLowerCase();
         if (status == 'success' || status == 'sukses' || status == 'failed' || status == 'gagal') {
-          _timer.cancel();
+          _timer?.cancel();
         }
       }
     } catch (e) {
@@ -124,77 +156,116 @@ class _TransactionStatusModalState extends ConsumerState<TransactionStatusModal>
       statusIcon = const CircularProgressIndicator();
     }
 
-    return Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-      backgroundColor: Colors.white,
-      insetPadding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            statusIcon,
-            const SizedBox(height: 24),
-            Text(
-              statusTitle,
-              style: TextStyle(
-                fontWeight: FontWeight.bold,
-                fontSize: 18,
-                color: statusColor,
+    final bool isDone = _errorMessage.isNotEmpty ||
+        (_transaction != null &&
+            (const ['success', 'sukses', 'failed', 'gagal']
+                .contains(_transaction!.status.toLowerCase())));
+
+    return PopScope(
+      canPop: true,
+      child: Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        backgroundColor: Colors.white,
+        insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Align(
+                alignment: Alignment.topRight,
+                child: IconButton(
+                  icon: const Icon(Icons.close_rounded, size: 22, color: Color(0xff94A3B8)),
+                  onPressed: () {
+                    ref.read(transactionViewModelProvider.notifier).loadInitialData();
+                    Navigator.of(context, rootNavigator: true).pop();
+                  },
+                ),
               ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              statusDesc,
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.grey.shade600,
-                height: 1.5,
+              statusIcon,
+              const SizedBox(height: 16),
+              Text(
+                statusTitle,
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                  color: statusColor,
+                ),
+                textAlign: TextAlign.center,
               ),
-              textAlign: TextAlign.center,
-            ),
-            if (_transaction != null) ...[
+              const SizedBox(height: 12),
+              Text(
+                statusDesc,
+                style: TextStyle(
+                  fontSize: 13,
+                  color: Colors.grey.shade600,
+                  height: 1.5,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              if (_transaction != null) ...[
+                const SizedBox(height: 20),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xffF8FAFC),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: const Color(0xffE2E8F0)),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildDetailRow('Ref ID', _transaction!.refId),
+                      const SizedBox(height: 8),
+                      _buildDetailRow('Nomor Tujuan', _transaction!.customerNo),
+                      const SizedBox(height: 8),
+                      _buildDetailRow('Produk', _transaction!.productName),
+                      const SizedBox(height: 8),
+                      _buildDetailRow('Total Bayar', _formatRupiah(_transaction!.sellingPrice), isBold: true),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 24),
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: const Color(0xffF8FAFC),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: const Color(0xffE2E8F0)),
+              if (isDone) ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      ref.read(transactionViewModelProvider.notifier).loadInitialData();
+                      ref.read(mainViewModelProvider.notifier).changeTab(2);
+                      Navigator.of(context, rootNavigator: true).pop();
+                      context.go(AppRoutes.home);
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: statusColor,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      elevation: 0,
+                    ),
+                    child: const Text('Lihat Riwayat', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
                 ),
-                child: Column(
-                  children: [
-                    _buildDetailRow('Ref ID', _transaction!.refId),
-                    const SizedBox(height: 8),
-                    _buildDetailRow('Nomor Tujuan', _transaction!.customerNo),
-                    const SizedBox(height: 8),
-                    _buildDetailRow('Produk', _transaction!.productName),
-                    const SizedBox(height: 8),
-                    _buildDetailRow('Total Bayar', _formatRupiah(_transaction!.sellingPrice), isBold: true),
-                  ],
+              ] else ...[
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      ref.read(transactionViewModelProvider.notifier).loadInitialData();
+                      Navigator.of(context, rootNavigator: true).pop();
+                    },
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xff64748B),
+                      side: const BorderSide(color: Color(0xffCBD5E1)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                    ),
+                    child: const Text('Tutup (Proses di Latar Belakang)', style: TextStyle(fontWeight: FontWeight.bold)),
+                  ),
                 ),
-              ),
+              ],
             ],
-            const SizedBox(height: 28),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () {
-                  Navigator.pop(context); // Close Modal
-                  Navigator.pop(context); // Go back to Home
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: statusColor,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  elevation: 0,
-                ),
-                child: const Text('Kembali ke Home', style: TextStyle(fontWeight: FontWeight.bold)),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

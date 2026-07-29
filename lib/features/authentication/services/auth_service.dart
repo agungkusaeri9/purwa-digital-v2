@@ -15,7 +15,7 @@ class AuthService {
       if (data is Map<String, dynamic>) {
         return AuthToken.fromJson(data);
       }
-      return AuthToken(accessToken: '');
+      return AuthToken(accessToken: '', refreshToken: '');
 
     } catch (error) {
       print(error);
@@ -25,12 +25,8 @@ class AuthService {
 
   Future<bool> validateToken(String token) async {
     try {
-      // final response = await _apiClient.dio.get<Map<String, dynamic>>(
-      //   '/api/auth/validate',
-      //   options: _apiClient.authOptions(token),
-      // );
-      // return response.data?['data'] ?? false;
-      return true;
+      final response = await _apiClient.dio.get('/api/me');
+      return response.statusCode == 200;
     } catch (error) {
       throw _apiClient.mapError(error);
     }

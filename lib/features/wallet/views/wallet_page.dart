@@ -441,7 +441,6 @@ class _WalletPageState extends ConsumerState<WalletPage> {
                             return Container(
                               margin: const EdgeInsets.only(bottom: 12.0),
                               decoration: BoxDecoration(
-                                color: Colors.white,
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(color: const Color(0xffF1F5F9)),
                                 boxShadow: [
@@ -452,41 +451,45 @@ class _WalletPageState extends ConsumerState<WalletPage> {
                                   ),
                                 ],
                               ),
-                              child: ListTile(
-                                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                                leading: Container(
-                                  padding: const EdgeInsets.all(10),
-                                  decoration: BoxDecoration(
-                                    color: itemColor.withOpacity(0.1),
-                                    shape: BoxShape.circle,
+                              child: Material(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                child: ListTile(
+                                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                                  leading: Container(
+                                    padding: const EdgeInsets.all(10),
+                                    decoration: BoxDecoration(
+                                      color: itemColor.withOpacity(0.1),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      isIn ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
+                                      size: 18,
+                                      color: itemColor,
+                                    ),
                                   ),
-                                  child: Icon(
-                                    isIn ? Icons.arrow_downward_rounded : Icons.arrow_upward_rounded,
-                                    size: 18,
-                                    color: itemColor,
+                                  title: Text(
+                                    tx.description,
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                      color: Color(0xff0F172A),
+                                    ),
                                   ),
-                                ),
-                                title: Text(
-                                  tx.description,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13,
-                                    color: Color(0xff1E293B),
+                                  subtitle: Text(
+                                    tx.createdAt,
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: Colors.grey.shade400,
+                                    ),
                                   ),
-                                ),
-                                subtitle: Text(
-                                  tx.createdAt,
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    color: Colors.grey.shade400,
-                                  ),
-                                ),
-                                trailing: Text(
-                                  '${isIn ? "+" : "-"}${_formatRupiah(tx.amount)}',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 13,
-                                    color: itemColor,
+                                  trailing: Text(
+                                    '${isIn ? "+" : "-"}${_formatRupiah(tx.amount)}',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 13,
+                                      color: itemColor,
+                                    ),
                                   ),
                                 ),
                               ),

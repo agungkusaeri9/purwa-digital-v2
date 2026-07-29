@@ -52,8 +52,14 @@ class PulsaFormViewModel extends StateNotifier<PulsaFormState> {
     return '';
   }
 
+  void setInitialBrand(String brand) {
+    state = state.copyWith(
+      providerName: brand,
+    );
+    fetchProducts(brand);
+  }
+
   void setPhoneNumber(String number) {
-    final prevProvider = state.providerName;
     final digits = number.replaceAll(RegExp(r'\D'), '');
     
     var clean = digits;
@@ -63,20 +69,9 @@ class PulsaFormViewModel extends StateNotifier<PulsaFormState> {
       clean = '0$digits';
     }
 
-    final newProvider = _detectProvider(clean);
-
     state = state.copyWith(
       phoneNumber: clean,
-      providerName: newProvider,
     );
-
-    if (newProvider != prevProvider) {
-      if (newProvider.isNotEmpty) {
-        fetchProducts(newProvider);
-      } else {
-        state = state.copyWith(products: [], selectedProduct: null);
-      }
-    }
   }
 
   void selectProduct(PPOBProductModel product) {
@@ -128,7 +123,7 @@ class PulsaFormViewModel extends StateNotifier<PulsaFormState> {
     }
   }
 
-  Future<String?> submitTransaction() async {
+  Future<String?> submitTransaction({String? pin}) async {
     if (state.selectedProduct == null || state.phoneNumber.isEmpty) {
       state = state.copyWith(errorMessage: 'Nomor HP atau Produk belum diisi.');
       return null;
@@ -142,6 +137,7 @@ class PulsaFormViewModel extends StateNotifier<PulsaFormState> {
         buyerSkuCode: state.selectedProduct!.skuCode,
         customerNo: state.phoneNumber,
         refId: refId,
+        pin: pin,
       );
       state = state.copyWith(
         isProcessing: false,

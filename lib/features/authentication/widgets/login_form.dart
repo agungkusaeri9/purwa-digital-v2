@@ -33,6 +33,8 @@ class _LoginFormState extends State<LoginForm> {
           style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           decoration: InputDecoration(
             labelText: 'Username',
+            hintText: 'Masukkan username Anda',
+            hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13, fontWeight: FontWeight.normal),
             prefixIcon: const Icon(Icons.person_outline, size: 20),
             filled: true,
             fillColor: Colors.white,
@@ -60,6 +62,8 @@ class _LoginFormState extends State<LoginForm> {
           style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
           decoration: InputDecoration(
             labelText: 'Password',
+            hintText: 'Masukkan kata sandi Anda',
+            hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13, fontWeight: FontWeight.normal),
             prefixIcon: const Icon(Icons.lock_outline, size: 20),
             suffixIcon: IconButton(
               onPressed: () {

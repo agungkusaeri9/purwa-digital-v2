@@ -24,13 +24,14 @@ class PPOBProductModel {
   factory PPOBProductModel.fromJson(Map<String, dynamic> json) {
     final basePrice = (json['base_price'] as num?)?.toDouble() ?? 0.0;
     final markupPrice = (json['markup_price'] as num?)?.toDouble() ?? 0.0;
+    final price = (json['price'] as num?)?.toDouble() ?? (basePrice + markupPrice);
     return PPOBProductModel(
       id: (json['id'] as num?)?.toInt() ?? 0,
       productName: json['product_name'] as String? ?? '',
       skuCode: json['sku_code'] as String? ?? '',
       basePrice: basePrice,
       markupPrice: markupPrice,
-      sellingPrice: basePrice + markupPrice,
+      sellingPrice: price,
       category: json['category'] as String? ?? '',
       brand: json['brand'] as String? ?? '',
       description: json['description'] as String?,

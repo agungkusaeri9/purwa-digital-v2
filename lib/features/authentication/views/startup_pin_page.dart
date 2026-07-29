@@ -1,0 +1,372 @@
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+import '../../../core/router/app_routes.dart';
+import '../../../core/errors/app_exception.dart';
+import '../../ppob/viewmodels/pulsa_form_viewmodel.dart';
+
+class StartupPinPage extends ConsumerStatefulWidget {
+  const StartupPinPage({super.key});
+
+  @override
+  ConsumerState<StartupPinPage> createState() => _StartupPinPageState();
+}
+
+class _StartupPinPageState extends ConsumerState<StartupPinPage> {
+  final TextEditingController _controller = TextEditingController();
+  final FocusNode _focusNode = FocusNode();
+  String _pin = '';
+  bool _isVerifying = false;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _onDigitPressed(String digit) {
+    if (_isVerifying || _pin.length >= 6) return;
+    final newPin = _pin + digit;
+    _updatePin(newPin);
+  }
+
+  void _onBackspacePressed() {
+    if (_isVerifying || _pin.isEmpty) return;
+    final newPin = _pin.substring(0, _pin.length - 1);
+    _updatePin(newPin);
+  }
+
+  Future<void> _updatePin(String newPin) async {
+    setState(() {
+      _pin = newPin;
+      _controller.text = newPin;
+      _errorMessage = null;
+    });
+
+    // Auto-verify when 6 digits are entered
+    if (newPin.length == 6 && !_isVerifying) {
+      setState(() {
+        _isVerifying = true;
+      });
+
+      try {
+        final service = ref.read(ppobServiceProvider);
+        final isValid = await service.verifyPin(newPin);
+
+        if (!mounted) return;
+
+        if (isValid) {
+          // PIN Valid -> Proceed into App!
+          context.go(AppRoutes.home);
+        } else {
+          setState(() {
+            _isVerifying = false;
+            _errorMessage = 'PIN yang Anda masukkan salah. Silakan coba lagi.';
+            _pin = '';
+            _controller.clear();
+          });
+        }
+      } catch (e) {
+        if (!mounted) return;
+        
+        if (e is AppException && e.statusCode == 401) {
+          context.go(AppRoutes.login);
+          return;
+        }
+
+        final errorMsg = e.toString().replaceAll('Exception: ', '');
+        setState(() {
+          _isVerifying = false;
+          _errorMessage = errorMsg.contains('PIN') ? errorMsg : 'PIN yang Anda masukkan salah. Silakan coba lagi.';
+          _pin = '';
+          _controller.clear();
+        });
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final primaryColor = Theme.of(context).primaryColor;
+
+    return WillPopScope(
+      onWillPop: () async => false, // Prevent physical back button pop
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: Column(
+            children: [
+              // Top Bar with Lock Badge (No close button - Mandatory Entry)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: primaryColor.withOpacity(0.08),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(Icons.shield_outlined, size: 16, color: primaryColor),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Aplikasi Terkunci',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: primaryColor,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // Centered Main Content Area
+              Expanded(
+                child: Center(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.symmetric(horizontal: 32.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // App Security Logo Header
+                        Container(
+                          width: 90,
+                          height: 90,
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: primaryColor.withOpacity(0.12),
+                                blurRadius: 20,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(45),
+                            child: Image.asset(
+                              'assets/images/logo.png',
+                              fit: BoxFit.contain,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+
+                        const Text(
+                          'Masukkan PIN Keamanan',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                            color: Color(0xff0F172A),
+                            letterSpacing: -0.3,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Masukkan 6 digit PIN untuk membuka dan mengakses akun Anda',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Color(0xff64748B),
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 36),
+
+                        // 6-Digit Dots Indicator / Progress Spinner
+                        if (_isVerifying)
+                          Column(
+                            children: [
+                              SizedBox(
+                                width: 24,
+                                height: 24,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2.5,
+                                  color: primaryColor,
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Memverifikasi PIN...',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: primaryColor,
+                                ),
+                              ),
+                            ],
+                          )
+                        else
+                          GestureDetector(
+                            onTap: () => _focusNode.requestFocus(),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: List.generate(6, (index) {
+                                final isFilled = index < _pin.length;
+                                final isCurrent = index == _pin.length;
+
+                                return AnimatedContainer(
+                                  duration: const Duration(milliseconds: 150),
+                                  margin: const EdgeInsets.symmetric(horizontal: 8),
+                                  width: 20,
+                                  height: 20,
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    color: isFilled
+                                        ? (_errorMessage != null ? Colors.red.shade600 : primaryColor)
+                                        : Colors.transparent,
+                                    border: Border.all(
+                                      color: _errorMessage != null
+                                          ? Colors.red.shade600
+                                          : (isFilled
+                                              ? primaryColor
+                                              : (isCurrent ? primaryColor : const Color(0xffCBD5E1))),
+                                      width: isCurrent ? 2.5 : 1.5,
+                                    ),
+                                  ),
+                                );
+                              }),
+                            ),
+                          ),
+
+                        // Error Message Banner below PIN Dots
+                        if (_errorMessage != null) ...[
+                          const SizedBox(height: 16),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.red.shade50,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.red.shade200),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.error_outline_rounded, size: 16, color: Colors.red.shade600),
+                                const SizedBox(width: 6),
+                                Flexible(
+                                  child: Text(
+                                    _errorMessage!,
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.red.shade700,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+
+                        const SizedBox(height: 36),
+
+                        // Custom 3x4 On-Screen Keypad
+                        ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 320),
+                          child: GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 3,
+                              childAspectRatio: 1.4,
+                              crossAxisSpacing: 16,
+                              mainAxisSpacing: 16,
+                            ),
+                            itemCount: 12,
+                            itemBuilder: (context, index) {
+                              if (index == 9) {
+                                return const SizedBox.shrink(); // Empty bottom-left
+                              } else if (index == 10) {
+                                return _buildKeypadButton('0');
+                              } else if (index == 11) {
+                                return _buildBackspaceButton();
+                              }
+                              return _buildKeypadButton('${index + 1}');
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildKeypadButton(String digit) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: _isVerifying ? null : () => _onDigitPressed(digit),
+        borderRadius: BorderRadius.circular(20),
+        splashColor: Theme.of(context).primaryColor.withOpacity(0.1),
+        highlightColor: Theme.of(context).primaryColor.withOpacity(0.05),
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xffF8FAFC),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xffF1F5F9)),
+          ),
+          child: Center(
+            child: Text(
+              digit,
+              style: const TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Color(0xff0F172A),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBackspaceButton() {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: _isVerifying ? null : _onBackspacePressed,
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          decoration: BoxDecoration(
+            color: const Color(0xffF8FAFC),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: const Color(0xffF1F5F9)),
+          ),
+          child: const Center(
+            child: Icon(
+              Icons.backspace_outlined,
+              size: 22,
+              color: Color(0xff475569),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
