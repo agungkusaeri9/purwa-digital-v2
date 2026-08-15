@@ -19,6 +19,7 @@ import '../../features/ppob/views/data_brand_page.dart';
 import '../../features/ppob/views/data_form_page.dart';
 import '../../features/ppob/views/pln_menu_page.dart';
 import '../../features/ppob/views/pln_form_page.dart';
+import '../../features/ppob/views/pln_pasca_form_page.dart';
 import '../../features/ppob/views/game_brand_page.dart';
 import '../../features/ppob/views/game_form_page.dart';
 import '../../features/transaction/models/ppob_transaction_model.dart';
@@ -74,6 +75,10 @@ final appRouterProvider = Provider<GoRouter>(
       GoRoute(
         path: AppRoutes.plnForm,
         builder: (_, __) => const PlnFormPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.plnPascaForm,
+        builder: (_, __) => const PlnPascaFormPage(),
       ),
       GoRoute(
         path: AppRoutes.gameBrand,

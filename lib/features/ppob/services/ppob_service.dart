@@ -57,6 +57,7 @@ class PPOBService {
   Future<List<PPOBProductModel>> getProducts({
     String? category,
     String? brand,
+    String? type,
   }) async {
     try {
       final queryParams = <String, dynamic>{
@@ -65,6 +66,7 @@ class PPOBService {
       };
       if (category != null) queryParams['category'] = category;
       if (brand != null) queryParams['brand'] = brand;
+      if (type != null) queryParams['type'] = type;
 
       final response = await _apiClient.dio.get(
         '/api/products',
@@ -83,6 +85,30 @@ class PPOBService {
       }
 
       return list.map((e) => PPOBProductModel.fromJson(e as Map<String, dynamic>)).toList();
+    } catch (e) {
+      throw _apiClient.mapError(e);
+    }
+  }
+
+  Future<Map<String, dynamic>> inquiryPasca({
+    required String buyerSkuCode,
+    required String customerNo,
+    String? refId,
+  }) async {
+    try {
+      final body = <String, dynamic>{
+        'buyer_sku_code': buyerSkuCode,
+        'customer_no': customerNo,
+      };
+      if (refId != null && refId.isNotEmpty) {
+        body['ref_id'] = refId;
+      }
+      final response = await _apiClient.dio.post(
+        '/api/digiflazz/inquiry-pasca',
+        data: body,
+      );
+      final responseData = response.data as Map<String, dynamic>;
+      return responseData['data'] as Map<String, dynamic>? ?? responseData;
     } catch (e) {
       throw _apiClient.mapError(e);
     }

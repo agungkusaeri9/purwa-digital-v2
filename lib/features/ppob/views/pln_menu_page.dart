@@ -105,7 +105,9 @@ class PlnMenuPage extends StatelessWidget {
                   ),
                 ),
                 GestureDetector(
-                  onTap: null,
+                  onTap: () {
+                    context.push(AppRoutes.plnPascaForm);
+                  },
                   child: Column(
                     children: [
                       Expanded(
@@ -122,48 +124,24 @@ class PlnMenuPage extends StatelessWidget {
                               ),
                             ],
                           ),
-                          child: Stack(
-                            alignment: Alignment.center,
-                            children: [
-                              Center(
-                                child: Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey.shade100,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: Icon(
-                                    Icons.receipt_long_rounded,
-                                    size: 22,
-                                    color: Colors.grey.shade400,
-                                  ),
-                                ),
+                          child: Center(
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: primaryColor.withOpacity(0.1),
+                                shape: BoxShape.circle,
                               ),
-                              Positioned(
-                                top: 4,
-                                right: 4,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-                                  decoration: BoxDecoration(
-                                    color: Colors.grey.shade200,
-                                    borderRadius: BorderRadius.circular(4),
-                                  ),
-                                  child: const Text(
-                                    'Soon',
-                                    style: TextStyle(
-                                      fontSize: 6,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.grey,
-                                    ),
-                                  ),
-                                ),
+                              child: Icon(
+                                Icons.receipt_long_rounded,
+                                size: 22,
+                                color: primaryColor,
                               ),
-                            ],
+                            ),
                           ),
                         ),
                       ),
                       const SizedBox(height: 6),
-                      Text(
+                      const Text(
                         'PLN Pascabayar',
                         textAlign: TextAlign.center,
                         maxLines: 1,
@@ -171,7 +149,7 @@ class PlnMenuPage extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
-                          color: Colors.grey.shade400,
+                          color: Color(0xff334155),
                         ),
                       ),
                     ],

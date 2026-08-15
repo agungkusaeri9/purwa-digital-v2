@@ -7,6 +7,8 @@ import '../constants/app_constants.dart';
 import '../errors/app_exception.dart';
 import '../storage/secure_storage_service.dart';
 
+import 'dio_logging_interceptor.dart';
+
 class ApiClient {
   ApiClient(this._secureStorage)
       : dio = Dio(
@@ -25,6 +27,7 @@ class ApiClient {
       };
     }
 
+    dio.interceptors.add(DioLoggingInterceptor());
     dio.interceptors.add(InterceptorsWrapper(
       onRequest: (options, handler) async {
         final token = await _secureStorage.readToken();
@@ -94,10 +97,20 @@ class ApiClient {
   AppException mapError(Object error) {
     if (error is DioException) {
       final data = error.response?.data;
-      final message = data is Map<String, dynamic>
-          ? data['message'] as String? ?? 'Terjadi kesalahan jaringan.'
-          : 'Terjadi kesalahan jaringan.';
-      return AppException(message, statusCode: error.response?.statusCode);
+      if (data is Map<String, dynamic>) {
+        final message = data['message'] as String?;
+        if (message != null && message.isNotEmpty) {
+          return AppException(message, statusCode: error.response?.statusCode);
+        }
+        final errors = data['errors'];
+        if (errors is String && errors.isNotEmpty) {
+          return AppException(errors, statusCode: error.response?.statusCode);
+        }
+      }
+      return AppException(
+        error.message ?? 'Terjadi kesalahan koneksi jaringan.',
+        statusCode: error.response?.statusCode,
+      );
     }
     return const AppException('Terjadi kesalahan yang tidak terduga.');
   }
