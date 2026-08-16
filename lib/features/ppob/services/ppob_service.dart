@@ -90,6 +90,19 @@ class PPOBService {
     }
   }
 
+  Future<PPOBProductModel?> getProductBySku(String sku) async {
+    try {
+      final response = await _apiClient.dio.get('/api/products/$sku');
+      final responseData = response.data as Map<String, dynamic>;
+      if (responseData['data'] != null) {
+        return PPOBProductModel.fromJson(responseData['data'] as Map<String, dynamic>);
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   Future<Map<String, dynamic>> inquiryPasca({
     required String buyerSkuCode,
     required String customerNo,

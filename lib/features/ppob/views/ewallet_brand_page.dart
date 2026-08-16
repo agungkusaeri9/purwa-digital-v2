@@ -7,35 +7,56 @@ import '../models/ppob_brand_model.dart';
 import '../viewmodels/pulsa_form_viewmodel.dart';
 import '../../../../core/router/app_routes.dart';
 
-final gameBrandsProvider = FutureProvider.autoDispose<List<PPOBBrandModel>>((ref) async {
+final ewalletBrandsProvider = FutureProvider.autoDispose<List<PPOBBrandModel>>((ref) async {
   final service = ref.watch(ppobServiceProvider);
-  try {
-    final list = await service.getBrands(category: 'games');
-    final targetGames = ['free fire', 'mobile legend', 'mobile legends'];
-    final filtered = list.where((b) => targetGames.any((t) => b.name.toLowerCase().contains(t))).toList();
+  final defaultEWallets = [
+    PPOBBrandModel(id: 1, name: 'DANA', slug: 'dana', logoUrl: ''),
+    PPOBBrandModel(id: 2, name: 'GO PAY', slug: 'go-pay', logoUrl: ''),
+    PPOBBrandModel(id: 3, name: 'OVO', slug: 'ovo', logoUrl: ''),
+    PPOBBrandModel(id: 4, name: 'SHOPEE PAY', slug: 'shopee-pay', logoUrl: ''),
+  ];
 
-    if (filtered.isNotEmpty) {
-      filtered.sort((a, b) {
-        if (a.name.toLowerCase().contains('free fire')) return -1;
-        if (b.name.toLowerCase().contains('free fire')) return 1;
-        return 0;
-      });
-      return filtered;
+  try {
+    var list = await service.getBrands(category: 'e-money');
+    if (list.isEmpty) {
+      list = await service.getBrands(category: 'emoney');
+    }
+
+    if (list.isNotEmpty) {
+      final targets = ['dana', 'gopay', 'go-pay', 'go pay', 'ovo', 'shopee', 'linkaja', 'link aja'];
+      final Map<String, PPOBBrandModel> uniqueBrands = {};
+
+      for (final b in list) {
+        final lower = b.name.toLowerCase();
+        for (final t in targets) {
+          if (lower.contains(t)) {
+            final key = (t == 'go-pay' || t == 'gopay' || t == 'go pay')
+                ? 'gopay'
+                : (t == 'shopee' ? 'shopee' : (t == 'linkaja' || t == 'link aja' ? 'linkaja' : t));
+            if (!uniqueBrands.containsKey(key)) {
+              uniqueBrands[key] = b;
+            }
+            break;
+          }
+        }
+      }
+
+      if (uniqueBrands.isNotEmpty) {
+        return uniqueBrands.values.toList();
+      }
+      return list;
     }
   } catch (_) {}
 
-  return [
-    PPOBBrandModel(id: 1, name: 'Free Fire', slug: 'free-fire', logoUrl: ''),
-    PPOBBrandModel(id: 2, name: 'Mobile Legends', slug: 'mobile-legends', logoUrl: ''),
-  ];
+  return defaultEWallets;
 });
 
-class GameBrandPage extends ConsumerWidget {
-  const GameBrandPage({super.key});
+class EWalletBrandPage extends ConsumerWidget {
+  const EWalletBrandPage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final brandsAsync = ref.watch(gameBrandsProvider);
+    final brandsAsync = ref.watch(ewalletBrandsProvider);
 
     return Scaffold(
       backgroundColor: const Color(0xffF8FAFC),
@@ -47,7 +68,7 @@ class GameBrandPage extends ConsumerWidget {
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          'Top Up Game',
+          'Top Up E-Wallet',
           style: TextStyle(
             color: Color(0xff0F172A),
             fontWeight: FontWeight.bold,
@@ -62,7 +83,7 @@ class GameBrandPage extends ConsumerWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              'Pilih Game',
+              'Pilih Dompet Digital',
               style: TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.bold,
@@ -87,7 +108,7 @@ class GameBrandPage extends ConsumerWidget {
 
                     return GestureDetector(
                       onTap: () {
-                        context.push('${AppRoutes.gameForm}?brand=${Uri.encodeComponent(brand.name)}');
+                        context.push('${AppRoutes.ewalletForm}?brand=${Uri.encodeComponent(brand.name)}');
                       },
                       child: Column(
                         children: [
@@ -110,7 +131,7 @@ class GameBrandPage extends ConsumerWidget {
                                 child: Center(
                                   child: Padding(
                                     padding: const EdgeInsets.all(8.0),
-                                    child: _buildGameIcon(brand),
+                                    child: _buildEWalletIcon(brand),
                                   ),
                                 ),
                               ),
@@ -136,7 +157,7 @@ class GameBrandPage extends ConsumerWidget {
               },
               loading: () => _buildSkeleton(context),
               error: (err, stack) => Center(
-                child: Text('Gagal memuat game: $err'),
+                child: Text('Gagal memuat e-wallet: $err'),
               ),
             ),
           ],
@@ -145,14 +166,18 @@ class GameBrandPage extends ConsumerWidget {
     );
   }
 
-  Widget _buildGameIcon(PPOBBrandModel brand) {
+  Widget _buildEWalletIcon(PPOBBrandModel brand) {
     final nameLower = brand.name.toLowerCase();
     String? svgPath;
 
-    if (nameLower.contains('free fire')) {
-      svgPath = 'assets/svgs/game/free_fire.svg';
-    } else if (nameLower.contains('mobile legend')) {
-      svgPath = 'assets/svgs/game/mobile_legend.svg';
+    if (nameLower.contains('dana')) {
+      svgPath = 'assets/svgs/e-wallet/dana.svg';
+    } else if (nameLower.contains('gopay') || nameLower.contains('go-pay') || nameLower.contains('go pay') || nameLower.contains('go')) {
+      svgPath = 'assets/svgs/e-wallet/gopay.svg';
+    } else if (nameLower.contains('ovo')) {
+      svgPath = 'assets/svgs/e-wallet/ovo.svg';
+    } else if (nameLower.contains('shopee') || nameLower.contains('shopeepay')) {
+      svgPath = 'assets/svgs/e-wallet/shopee_pay.svg';
     }
 
     if (svgPath != null) {
@@ -167,11 +192,11 @@ class GameBrandPage extends ConsumerWidget {
         brand.logoUrl!,
         fit: BoxFit.contain,
         errorBuilder: (context, error, stackTrace) =>
-            const Icon(Icons.sports_esports_rounded, size: 28, color: Color(0xff2563EB)),
+            const Icon(Icons.account_balance_wallet_rounded, size: 28, color: Color(0xff8B5CF6)),
       );
     }
 
-    return const Icon(Icons.sports_esports_rounded, size: 28, color: Color(0xff2563EB));
+    return const Icon(Icons.account_balance_wallet_rounded, size: 28, color: Color(0xff8B5CF6));
   }
 
   Widget _buildSkeleton(BuildContext context) {
@@ -187,7 +212,7 @@ class GameBrandPage extends ConsumerWidget {
           mainAxisSpacing: 16,
           childAspectRatio: 0.85,
         ),
-        itemCount: 2,
+        itemCount: 4,
         itemBuilder: (context, index) {
           return Column(
             children: [

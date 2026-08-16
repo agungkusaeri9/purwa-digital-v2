@@ -22,6 +22,14 @@ import '../../features/ppob/views/pln_form_page.dart';
 import '../../features/ppob/views/pln_pasca_form_page.dart';
 import '../../features/ppob/views/game_brand_page.dart';
 import '../../features/ppob/views/game_form_page.dart';
+import '../../features/ppob/views/ewallet_brand_page.dart';
+import '../../features/ppob/views/ewallet_form_page.dart';
+import '../../features/ppob/views/bpjs_menu_page.dart';
+import '../../features/ppob/views/bpjs_form_page.dart';
+import '../../features/ppob/views/pdam_brand_page.dart';
+import '../../features/ppob/views/pdam_form_page.dart';
+import '../../features/ppob/views/internet_brand_page.dart';
+import '../../features/ppob/views/internet_form_page.dart';
 import '../../features/transaction/models/ppob_transaction_model.dart';
 import '../../features/transaction/views/transaction_detail_page.dart';
 import 'app_routes.dart';
@@ -89,6 +97,52 @@ final appRouterProvider = Provider<GoRouter>(
         builder: (context, state) {
           final brand = state.uri.queryParameters['brand'];
           return GameFormPage(initialBrand: brand);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.ewalletBrand,
+        builder: (_, __) => const EWalletBrandPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.ewalletForm,
+        builder: (context, state) {
+          final brand = state.uri.queryParameters['brand'];
+          return EWalletFormPage(initialBrand: brand);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.bpjsMenu,
+        builder: (_, __) => const BpjsMenuPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.bpjsForm,
+        builder: (context, state) {
+          final type = state.uri.queryParameters['type'];
+          return BpjsFormPage(initialType: type);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.pdamBrand,
+        builder: (_, __) => const PdamBrandPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.pdamForm,
+        builder: (context, state) {
+          final sku = state.uri.queryParameters['sku'];
+          final name = state.uri.queryParameters['name'];
+          return PdamFormPage(initialSku: sku, initialName: name);
+        },
+      ),
+      GoRoute(
+        path: AppRoutes.internetBrand,
+        builder: (_, __) => const InternetBrandPage(),
+      ),
+      GoRoute(
+        path: AppRoutes.internetForm,
+        builder: (context, state) {
+          final sku = state.uri.queryParameters['sku'];
+          final name = state.uri.queryParameters['name'];
+          return InternetFormPage(initialSku: sku, initialName: name);
         },
       ),
       GoRoute(

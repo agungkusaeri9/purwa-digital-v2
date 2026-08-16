@@ -39,6 +39,7 @@ class MainPage extends ConsumerWidget {
         label: 'Favorit',
         activeIcon: Icons.favorite_rounded,
         inactiveIcon: Icons.favorite_border_rounded,
+        isSoon: true,
       ),
       _NavItemData(
         label: 'Transaksi',
@@ -95,18 +96,44 @@ class MainPage extends ConsumerWidget {
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           // Icon Container dengan Highlight lembut saat aktif
-                          AnimatedContainer(
-                            duration: const Duration(milliseconds: 200),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: isSelected ? primaryColor.withOpacity(0.1) : Colors.transparent,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Icon(
-                              isSelected ? item.activeIcon : item.inactiveIcon,
-                              color: isSelected ? primaryColor : const Color(0xff94A3B8),
-                              size: 22,
-                            ),
+                          Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              AnimatedContainer(
+                                duration: const Duration(milliseconds: 200),
+                                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: isSelected ? primaryColor.withOpacity(0.1) : Colors.transparent,
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Icon(
+                                  isSelected ? item.activeIcon : item.inactiveIcon,
+                                  color: isSelected ? primaryColor : const Color(0xff94A3B8),
+                                  size: 22,
+                                ),
+                              ),
+                              if (item.isSoon)
+                                Positioned(
+                                  top: -2,
+                                  right: 4,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1.5),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xffF59E0B),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: const Text(
+                                      'SOON',
+                                      style: TextStyle(
+                                        fontSize: 6.5,
+                                        fontWeight: FontWeight.w900,
+                                        color: Colors.white,
+                                        letterSpacing: 0.2,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                           const SizedBox(height: 4),
 
@@ -137,10 +164,12 @@ class _NavItemData {
   final String label;
   final IconData activeIcon;
   final IconData inactiveIcon;
+  final bool isSoon;
 
   _NavItemData({
     required this.label,
     required this.activeIcon,
     required this.inactiveIcon,
+    this.isSoon = false,
   });
 }

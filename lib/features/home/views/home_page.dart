@@ -10,10 +10,12 @@ import 'package:shimmer/shimmer.dart';
 import '../../transaction/views/transaction_detail_page.dart';
 import '../../transaction/models/ppob_transaction_model.dart';
 import '../../../core/router/app_routes.dart';
+import '../../../core/widgets/app_error_dialog.dart';
 import '../../ppob/models/ppob_category_model.dart';
 import '../../ppob/viewmodels/pulsa_form_viewmodel.dart';
 
-final ppobCategoriesProvider = FutureProvider.autoDispose<List<PPOBCategoryModel>>((ref) async {
+final ppobCategoriesProvider =
+    FutureProvider.autoDispose<List<PPOBCategoryModel>>((ref) async {
   final service = ref.watch(ppobServiceProvider);
   return service.getCategoriesList();
 });
@@ -59,9 +61,12 @@ class HomePage extends ConsumerWidget {
         final catSlugLower = cat.slug.toLowerCase();
         if (catNameLower == labelLower ||
             catSlugLower == labelLower ||
-            (labelLower == 'paket data' && (catNameLower == 'data' || catSlugLower == 'data')) ||
-            (labelLower == 'token pln' && (catNameLower == 'pln' || catSlugLower == 'pln')) ||
-            (labelLower == 'game' && (catNameLower == 'games' || catSlugLower == 'games'))) {
+            (labelLower == 'paket data' &&
+                (catNameLower == 'data' || catSlugLower == 'data')) ||
+            (labelLower == 'token pln' &&
+                (catNameLower == 'pln' || catSlugLower == 'pln')) ||
+            (labelLower == 'game' &&
+                (catNameLower == 'games' || catSlugLower == 'games'))) {
           return cat.logoUrl;
         }
       }
@@ -99,12 +104,14 @@ class HomePage extends ConsumerWidget {
         backgroundColor: Colors.white,
       ),
       body: RefreshIndicator(
-        onRefresh: () => ref.read(homeViewModelProvider.notifier).loadHomeData(),
+        onRefresh: () =>
+            ref.read(homeViewModelProvider.notifier).loadHomeData(),
         child: homeState.isLoading && profile == null
             ? _buildSkeleton(context)
             : ListView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 24.0, vertical: 12.0),
                 children: [
                   // 1. PPOB Style Custom Top Area (Greeting & Logout Button)
                   Row(
@@ -119,7 +126,8 @@ class HomePage extends ConsumerWidget {
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: const Color(0xffE2E8F0)),
+                              border:
+                                  Border.all(color: const Color(0xffE2E8F0)),
                             ),
                             child: ClipRRect(
                               borderRadius: BorderRadius.circular(8),
@@ -184,7 +192,8 @@ class HomePage extends ConsumerWidget {
                                   child: Text(
                                     notificationState.unreadCount > 99
                                         ? '99+'
-                                        : notificationState.unreadCount.toString(),
+                                        : notificationState.unreadCount
+                                            .toString(),
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 8,
@@ -207,7 +216,10 @@ class HomePage extends ConsumerWidget {
                     padding: const EdgeInsets.all(22),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [Color(0xff1E3A8A), Color(0xff3B82F6)], // Dark Blue to Light Blue
+                        colors: [
+                          Color(0xff1E3A8A),
+                          Color(0xff3B82F6)
+                        ], // Dark Blue to Light Blue
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                       ),
@@ -236,7 +248,8 @@ class HomePage extends ConsumerWidget {
                               ),
                             ),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 10, vertical: 4),
                               decoration: BoxDecoration(
                                 color: Colors.white.withOpacity(0.15),
                                 borderRadius: BorderRadius.circular(100),
@@ -255,7 +268,9 @@ class HomePage extends ConsumerWidget {
                         const SizedBox(height: 10),
                         // Menampilkan Saldo Kas operasional (sesuai menu Uang Kas)
                         Text(
-                          stats != null ? _formatRupiah(stats.cashBalance) : 'Rp 0',
+                          stats != null
+                              ? _formatRupiah(stats.cashBalance)
+                              : 'Rp 0',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 26,
@@ -272,9 +287,18 @@ class HomePage extends ConsumerWidget {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            _buildWalletInfo('Saldo Digiflazz', stats != null ? _formatRupiah(stats.digiflazzBalance) : 'Rp 0'),
-                            _buildWalletInfo('Transaksi', stats != null ? stats.totalTransactions.toString() : '0'),
-                            _buildWalletInfo('Status Server', 'ONLINE', isSuccess: true),
+                            _buildWalletInfo(
+                                'Saldo Digiflazz',
+                                stats != null
+                                    ? _formatRupiah(stats.digiflazzBalance)
+                                    : 'Rp 0'),
+                            _buildWalletInfo(
+                                'Transaksi',
+                                stats != null
+                                    ? stats.totalTransactions.toString()
+                                    : '0'),
+                            _buildWalletInfo('Status Server', 'ONLINE',
+                                isSuccess: true),
                           ],
                         ),
                       ],
@@ -339,8 +363,7 @@ class HomePage extends ConsumerWidget {
                         label: 'E-Wallet',
                         color: const Color(0xff8B5CF6),
                         logoUrl: getLogo('E-Wallet'),
-                        onTap: () {},
-                        isSoon: true,
+                        onTap: () => context.push('/ewallet-brand'),
                       ),
                       _buildPPOBItem(
                         context: context,
@@ -348,26 +371,23 @@ class HomePage extends ConsumerWidget {
                         label: 'BPJS',
                         color: const Color(0xff14B8A6),
                         logoUrl: getLogo('BPJS'),
-                        onTap: () {},
-                        isSoon: true,
+                        onTap: () => context.push('/bpjs-menu'),
                       ),
                       _buildPPOBItem(
                         context: context,
                         icon: Icons.water_drop_rounded,
                         label: 'PDAM',
-                        color: const Color(0xff3B82F6),
+                        color: const Color(0xff06B6D4),
                         logoUrl: getLogo('PDAM'),
-                        onTap: () {},
-                        isSoon: true,
+                        onTap: () => context.push('/pdam-brand'),
                       ),
                       _buildPPOBItem(
                         context: context,
-                        icon: Icons.tv_rounded,
-                        label: 'Internet & TV',
-                        color: const Color(0xffF43F5E),
-                        logoUrl: getLogo('Internet & TV'),
-                        onTap: () {},
-                        isSoon: true,
+                        icon: Icons.wifi_rounded,
+                        label: 'Internet Pasca',
+                        color: const Color(0xff8B5CF6),
+                        logoUrl: getLogo('Internet Pasca'),
+                        onTap: () => context.push('/internet-brand'),
                       ),
                       _buildPPOBItem(
                         context: context,
@@ -425,11 +445,13 @@ class HomePage extends ConsumerWidget {
                       alignment: Alignment.center,
                       child: Column(
                         children: [
-                          Icon(Icons.history_rounded, size: 40, color: Colors.grey.shade300),
+                          Icon(Icons.history_rounded,
+                              size: 40, color: Colors.grey.shade300),
                           const SizedBox(height: 8),
                           Text(
                             'Belum ada riwayat transaksi.',
-                            style: TextStyle(color: Colors.grey.shade400, fontSize: 12),
+                            style: TextStyle(
+                                color: Colors.grey.shade400, fontSize: 12),
                           ),
                         ],
                       ),
@@ -467,10 +489,12 @@ class HomePage extends ConsumerWidget {
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(16),
-                              border: Border.all(color: const Color(0xffF8FAFC), width: 1.5),
+                              border: Border.all(
+                                  color: const Color(0xffF8FAFC), width: 1.5),
                               boxShadow: [
                                 BoxShadow(
-                                  color: const Color(0xff0F172A).withOpacity(0.02),
+                                  color:
+                                      const Color(0xff0F172A).withOpacity(0.02),
                                   blurRadius: 10,
                                   offset: const Offset(0, 4),
                                 ),
@@ -482,13 +506,17 @@ class HomePage extends ConsumerWidget {
                                 Container(
                                   padding: const EdgeInsets.all(10),
                                   decoration: BoxDecoration(
-                                    color: _getStatusColor(tx.status).withOpacity(0.1),
+                                    color: _getStatusColor(tx.status)
+                                        .withOpacity(0.1),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Icon(
-                                    tx.status.toLowerCase() == 'success' || tx.status.toLowerCase() == 'sukses'
+                                    tx.status.toLowerCase() == 'success' ||
+                                            tx.status.toLowerCase() == 'sukses'
                                         ? Icons.check_circle_rounded
-                                        : tx.status.toLowerCase() == 'failed' || tx.status.toLowerCase() == 'gagal'
+                                        : tx.status.toLowerCase() == 'failed' ||
+                                                tx.status.toLowerCase() ==
+                                                    'gagal'
                                             ? Icons.cancel_rounded
                                             : Icons.schedule_rounded,
                                     size: 20,
@@ -496,14 +524,16 @@ class HomePage extends ConsumerWidget {
                                   ),
                                 ),
                                 const SizedBox(width: 12),
-                                
+
                                 // 2. Info Transaksi (Title & Subtitle)
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     mainAxisAlignment: MainAxisAlignment.center,
                                     children: [
-                                      if (tx.category != null && tx.category!.isNotEmpty) ...[
+                                      if (tx.category != null &&
+                                          tx.category!.isNotEmpty) ...[
                                         Text(
                                           tx.category!.toUpperCase(),
                                           style: const TextStyle(
@@ -555,9 +585,11 @@ class HomePage extends ConsumerWidget {
                                     ),
                                     const SizedBox(height: 6),
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 8, vertical: 3),
                                       decoration: BoxDecoration(
-                                        color: _getStatusColor(tx.status).withOpacity(0.1),
+                                        color: _getStatusColor(tx.status)
+                                            .withOpacity(0.1),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
                                       child: Text(
@@ -584,7 +616,8 @@ class HomePage extends ConsumerWidget {
     );
   }
 
-  Widget _buildWalletInfo(String label, String value, {bool isSuccess = false}) {
+  Widget _buildWalletInfo(String label, String value,
+      {bool isSuccess = false}) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -620,7 +653,11 @@ class HomePage extends ConsumerWidget {
   }) {
     final hasLogo = logoUrl != null && logoUrl.isNotEmpty;
     return GestureDetector(
-      onTap: isSoon ? null : onTap,
+      onTap: isSoon
+          ? () {
+              showErrorToastAlert(context, 'Fitur $label akan segera hadir!');
+            }
+          : onTap,
       child: Column(
         children: [
           Stack(
@@ -629,11 +666,17 @@ class HomePage extends ConsumerWidget {
               Container(
                 width: 46,
                 height: 46,
-                padding: hasLogo ? const EdgeInsets.all(8) : const EdgeInsets.all(12),
+                padding: hasLogo
+                    ? const EdgeInsets.all(8)
+                    : const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: isSoon ? Colors.grey.shade100 : color.withOpacity(0.08),
+                  color:
+                      isSoon ? Colors.grey.shade100 : color.withOpacity(0.08),
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: isSoon ? Colors.grey.shade200 : color.withOpacity(0.15)),
+                  border: Border.all(
+                      color: isSoon
+                          ? Colors.grey.shade200
+                          : color.withOpacity(0.15)),
                 ),
                 child: hasLogo
                     ? Image.network(
@@ -656,11 +699,13 @@ class HomePage extends ConsumerWidget {
                   top: -4,
                   right: -4,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
                     decoration: BoxDecoration(
                       color: const Color(0xffF1F5F9),
                       borderRadius: BorderRadius.circular(6),
-                      border: Border.all(color: const Color(0xffCBD5E1), width: 0.5),
+                      border: Border.all(
+                          color: const Color(0xffCBD5E1), width: 0.5),
                     ),
                     child: const Text(
                       'SOON',
@@ -707,16 +752,30 @@ class HomePage extends ConsumerWidget {
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(width: 100, height: 12, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
+                  Container(
+                      width: 100,
+                      height: 12,
+                      decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4))),
                   const SizedBox(height: 8),
-                  Container(width: 150, height: 18, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
+                  Container(
+                      width: 150,
+                      height: 18,
+                      decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(4))),
                 ],
               ),
-              Container(width: 32, height: 32, decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle)),
+              Container(
+                  width: 32,
+                  height: 32,
+                  decoration: const BoxDecoration(
+                      color: Colors.white, shape: BoxShape.circle)),
             ],
           ),
           const SizedBox(height: 20),
-          
+
           // Saldo Card Skeleton
           Container(
             width: double.infinity,
@@ -729,7 +788,11 @@ class HomePage extends ConsumerWidget {
           const SizedBox(height: 28),
 
           // Quick Action Skeleton
-          Container(width: 100, height: 12, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
+          Container(
+              width: 100,
+              height: 12,
+              decoration: BoxDecoration(
+                  color: Colors.white, borderRadius: BorderRadius.circular(4))),
           const SizedBox(height: 16),
           GridView.count(
             shrinkWrap: true,
@@ -738,20 +801,27 @@ class HomePage extends ConsumerWidget {
             crossAxisSpacing: 8,
             mainAxisSpacing: 12,
             childAspectRatio: 0.85,
-            children: List.generate(10, (index) => Column(
-              children: [
-                Container(
-                  width: 46,
-                  height: 46,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Container(width: 40, height: 8, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
-              ],
-            )),
+            children: List.generate(
+                10,
+                (index) => Column(
+                      children: [
+                        Container(
+                          width: 46,
+                          height: 46,
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                            width: 40,
+                            height: 8,
+                            decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(4))),
+                      ],
+                    )),
           ),
           const SizedBox(height: 32),
 
@@ -759,19 +829,31 @@ class HomePage extends ConsumerWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(width: 120, height: 12, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
-              Container(width: 60, height: 12, decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(4))),
+              Container(
+                  width: 120,
+                  height: 12,
+                  decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4))),
+              Container(
+                  width: 60,
+                  height: 12,
+                  decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(4))),
             ],
           ),
           const SizedBox(height: 16),
-          ...List.generate(3, (index) => Container(
-            margin: const EdgeInsets.only(bottom: 12),
-            height: 70,
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-            ),
-          )),
+          ...List.generate(
+              3,
+              (index) => Container(
+                    margin: const EdgeInsets.only(bottom: 12),
+                    height: 70,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                  )),
         ],
       ),
     );

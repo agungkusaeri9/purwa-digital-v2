@@ -4,6 +4,7 @@ import 'package:purwa_digital/features/home/viewmodels/home_viewmodel.dart';
 import 'package:purwa_digital/features/home/viewmodels/home_state.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/services/biometric_service.dart';
+import '../../../core/widgets/app_error_dialog.dart';
 
 class ProfilePage extends ConsumerStatefulWidget {
   const ProfilePage({super.key});
@@ -37,42 +38,26 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     final biometricService = ref.read(biometricServiceProvider);
 
     if (value) {
-      // Enable: check device support first
       final canUse = await biometricService.canCheckBiometrics();
       if (!canUse) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Perangkat Anda tidak mendukung biometrik.'),
-              backgroundColor: Colors.orange,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          showErrorToastAlert(context, 'Perangkat Anda tidak mendukung biometrik.');
         }
         return;
       }
 
-      // Verify fingerprint before enabling
       final authenticated = await biometricService.authenticate();
       if (!authenticated) {
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Verifikasi sidik jari gagal.'),
-              backgroundColor: Color(0xffEF4444),
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          showErrorToastAlert(context, 'Verifikasi sidik jari gagal.');
         }
         return;
       }
 
-      // Prompt for credentials to store
       if (mounted) {
         await _showCredentialDialog(biometricService, email);
       }
     } else {
-      // Disable biometric
       await biometricService.clearCredentials();
       setState(() => _biometricEnabled = false);
       if (mounted) {
@@ -173,6 +158,104 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
         );
       }
     }
+  }
+
+  void _showAboutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: const Color(0xff14B8A6).withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.info_outline_rounded, color: Color(0xff14B8A6), size: 22),
+            ),
+            const SizedBox(width: 12),
+            const Text('Purwa Digital', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Aplikasi Layanan Keuangan Digital & PPOB Terlengkap & Terpercaya.',
+              style: TextStyle(fontSize: 13, color: Color(0xff475569), height: 1.4),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text('Versi Aplikasi', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xffF1F5F9),
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Text('v1.0.0', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold, color: Color(0xff0F172A))),
+                ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xff14B8A6),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              elevation: 0,
+            ),
+            child: const Text('Tutup', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSleekToggle({
+    required bool value,
+    required ValueChanged<bool> onChanged,
+  }) {
+    return GestureDetector(
+      onTap: () => onChanged(!value),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        width: 38,
+        height: 22,
+        padding: const EdgeInsets.all(2),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          color: value ? const Color(0xff10B981) : const Color(0xffCBD5E1),
+        ),
+        child: AnimatedAlign(
+          duration: const Duration(milliseconds: 200),
+          alignment: value ? Alignment.centerRight : Alignment.centerLeft,
+          child: Container(
+            width: 18,
+            height: 18,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: Colors.white,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black12,
+                  blurRadius: 2,
+                  offset: Offset(0, 1),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -283,7 +366,7 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
             ),
             const SizedBox(height: 16),
 
-            // 2. Menu Utama (Pengaturan & Bantuan disatukan)
+            // 2. Menu Utama Tight Group
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20.0),
               child: _buildMenuGroup(
@@ -293,29 +376,34 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     icon: Icons.person_outline_rounded,
                     title: 'Edit Profil',
                     iconColor: const Color(0xff3B82F6),
+                    isSoon: true,
                   ),
-                  const Divider(height: 1, color: Color(0xffF1F5F9), indent: 52),
+                  const Divider(height: 1, color: Color(0xffF1F5F9), indent: 48),
                   _buildMenuTile(
                     icon: Icons.lock_outline_rounded,
                     title: 'Ubah Kata Sandi',
                     iconColor: const Color(0xffF59E0B),
+                    isSoon: true,
                   ),
-                  const Divider(height: 1, color: Color(0xffF1F5F9), indent: 52),
-                  // Biometric Menu
+                  const Divider(height: 1, color: Color(0xffF1F5F9), indent: 48),
+
+                  // Biometric Fingerprint (ACTIVE)
                   ListTile(
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    dense: true,
+                    visualDensity: const VisualDensity(vertical: -2),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
                     leading: Container(
-                      padding: const EdgeInsets.all(8),
+                      padding: const EdgeInsets.all(6),
                       decoration: BoxDecoration(
                         color: const Color(0xff10B981).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(10),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      child: const Icon(Icons.fingerprint, color: Color(0xff10B981), size: 20),
+                      child: const Icon(Icons.fingerprint, color: Color(0xff10B981), size: 18),
                     ),
                     title: const Text(
                       'Sidik Jari / Biometrik',
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: Color(0xff0F172A),
                       ),
@@ -323,74 +411,79 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
                     subtitle: Text(
                       _biometricEnabled ? 'Aktif' : 'Nonaktif',
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: 10,
                         color: _biometricEnabled ? const Color(0xff10B981) : Colors.grey,
                         fontWeight: FontWeight.w600,
                       ),
                     ),
                     trailing: _checkingBiometric
                         ? const SizedBox(
-                            width: 20, height: 20,
+                            width: 16, height: 16,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : Switch(
+                        : _buildSleekToggle(
                             value: _biometricEnabled,
-                            activeColor: const Color(0xff10B981),
                             onChanged: (val) => _toggleBiometric(val, profile?.email),
                           ),
                   ),
-                  const Divider(height: 1, color: Color(0xffF1F5F9), indent: 52),
+
+                  const Divider(height: 1, color: Color(0xffF1F5F9), indent: 48),
                   _buildMenuTile(
                     icon: Icons.help_outline_rounded,
                     title: 'Pusat Bantuan',
                     iconColor: const Color(0xff6366F1),
+                    isSoon: true,
                   ),
-                  const Divider(height: 1, color: Color(0xffF1F5F9), indent: 52),
+                  const Divider(height: 1, color: Color(0xffF1F5F9), indent: 48),
                   _buildMenuTile(
                     icon: Icons.gavel_rounded,
                     title: 'Syarat & Ketentuan',
                     iconColor: const Color(0xff8B5CF6),
+                    isSoon: true,
                   ),
-                  const Divider(height: 1, color: Color(0xffF1F5F9), indent: 52),
+                  const Divider(height: 1, color: Color(0xffF1F5F9), indent: 48),
+                  
+                  // Tentang Aplikasi (ACTIVE)
                   _buildMenuTile(
                     icon: Icons.info_outline_rounded,
                     title: 'Tentang Aplikasi',
                     iconColor: const Color(0xff14B8A6),
                     trailing: const Text(
                       'v1.0.0',
-                      style: TextStyle(fontSize: 12, color: Colors.grey, fontWeight: FontWeight.bold),
+                      style: TextStyle(fontSize: 11, color: Colors.grey, fontWeight: FontWeight.bold),
                     ),
+                    onTap: () => _showAboutDialog(context),
                   ),
                 ],
               ),
             ),
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
-            // 5. Tombol Keluar
+            // Tombol Keluar
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20.0),
               child: ElevatedButton.icon(
                 onPressed: () {
                   _showLogoutDialog(context, ref);
                 },
-                icon: const Icon(Icons.logout_rounded, size: 20),
+                icon: const Icon(Icons.logout_rounded, size: 18),
                 label: const Text(
                   'Keluar dari Akun',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xffFEF2F2),
                   foregroundColor: const Color(0xffEF4444),
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  minimumSize: const Size(double.infinity, 50),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  minimumSize: const Size(double.infinity, 46),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(14),
                   ),
                   elevation: 0,
                 ),
               ),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 28),
           ],
         ),
       ),
@@ -400,19 +493,19 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
   Widget _buildMenuGroup(BuildContext context, {required List<Widget> children}) {
     return Container(
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         border: Border.all(color: const Color(0xffE2E8F0)),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.01),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Material(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         clipBehavior: Clip.antiAlias,
         child: Column(
           children: children,
@@ -426,28 +519,64 @@ class _ProfilePageState extends ConsumerState<ProfilePage> {
     required String title,
     required Color iconColor,
     Widget? trailing,
+    bool isSoon = false,
+    VoidCallback? onTap,
   }) {
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      dense: true,
+      visualDensity: const VisualDensity(vertical: -2),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
       leading: Container(
-        padding: const EdgeInsets.all(8),
+        padding: const EdgeInsets.all(6),
         decoration: BoxDecoration(
           color: iconColor.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(10),
+          borderRadius: BorderRadius.circular(8),
         ),
-        child: Icon(icon, color: iconColor, size: 20),
+        child: Icon(icon, color: iconColor, size: 18),
       ),
-      title: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w600,
-          color: Color(0xff0F172A),
-        ),
+      title: Row(
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Color(0xff0F172A),
+            ),
+          ),
+          if (isSoon) ...[
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+              decoration: BoxDecoration(
+                color: const Color(0xffF59E0B),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: const Text(
+                'SOON',
+                style: TextStyle(
+                  fontSize: 7,
+                  fontWeight: FontWeight.w900,
+                  color: Colors.white,
+                  letterSpacing: 0.3,
+                ),
+              ),
+            ),
+          ],
+        ],
       ),
-      trailing: trailing ?? const Icon(Icons.chevron_right_rounded, color: Colors.grey, size: 20),
+      trailing: trailing ??
+          Icon(
+            Icons.chevron_right_rounded,
+            color: Colors.grey.shade400,
+            size: 18,
+          ),
       onTap: () {
-        // Todo: Implement navigation
+        if (isSoon) {
+          showErrorToastAlert(context, 'Fitur $title akan segera hadir!');
+        } else if (onTap != null) {
+          onTap();
+        }
       },
     );
   }

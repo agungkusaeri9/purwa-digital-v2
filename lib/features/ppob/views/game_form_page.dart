@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/widgets/app_error_dialog.dart';
 import '../viewmodels/game_form_viewmodel.dart';
 import '../models/ppob_product_model.dart';
 import 'widgets/transaction_status_modal.dart';
@@ -94,13 +96,7 @@ class _GameFormPageState extends ConsumerState<GameFormPage> {
       gameFormViewModelProvider.select((s) => s.errorMessage),
       (prev, next) {
         if (next != null && next.isNotEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(next),
-              backgroundColor: Colors.red,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          showErrorToastAlert(context, next);
         }
       },
     );
@@ -145,10 +141,12 @@ class _GameFormPageState extends ConsumerState<GameFormPage> {
                       children: [
                         Row(
                           children: [
-                            Icon(
-                              isMobileLegends ? Icons.shield_rounded : Icons.person_rounded,
-                              color: primaryColor,
-                              size: 20,
+                            SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: isMobileLegends
+                                  ? SvgPicture.asset('assets/svgs/game/mobile_legend.svg', fit: BoxFit.contain)
+                                  : SvgPicture.asset('assets/svgs/game/free_fire.svg', fit: BoxFit.contain),
                             ),
                             const SizedBox(width: 8),
                             Text(

@@ -235,6 +235,23 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
 
     final hasActiveFilter = state.filter.category.isNotEmpty || state.filter.status.isNotEmpty;
 
+    // Calculate today's total transactions and nominal
+    final now = DateTime.now();
+    int todayTxCount = 0;
+    double todayTxTotalAmount = 0;
+
+    for (final tx in state.transactions) {
+      final dt = DateTime.tryParse(tx.createdAt)?.toLocal();
+      if (dt != null &&
+          dt.year == now.year &&
+          dt.month == now.month &&
+          dt.day == now.day &&
+          (tx.status.toLowerCase() == 'sukses' || tx.status.toLowerCase() == 'success')) {
+        todayTxCount++;
+        todayTxTotalAmount += tx.sellingPrice;
+      }
+    }
+
     // Group transactions by date
     final Map<String, List<PPOBTransactionModel>> groupedTransactions = {};
     for (final tx in state.transactions) {
@@ -294,6 +311,118 @@ class _TransactionPageState extends ConsumerState<TransactionPage> {
         onRefresh: () async => viewModel.loadInitialData(),
         child: Column(
           children: [
+            // Summary Card untuk Transaksi Hari Ini (Light Theme)
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
+              child: Container(
+                padding: const EdgeInsets.all(16.0),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: const Color(0xffE2E8F0)),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xff0F172A).withOpacity(0.03),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Row(
+                  children: [
+                    // Total Nominal Hari Ini
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(5),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xff0284C7).withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(
+                                  Icons.today_rounded,
+                                  color: Color(0xff0284C7),
+                                  size: 15,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              const Text(
+                                'Transaksi Hari Ini',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w600,
+                                  color: Color(0xff64748B),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _formatRupiah(todayTxTotalAmount),
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w900,
+                              color: Color(0xff0F172A),
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Divider Vertical
+                    Container(
+                      height: 38,
+                      width: 1,
+                      color: const Color(0xffE2E8F0),
+                    ),
+                    const SizedBox(width: 16),
+
+                    // Total Transaksi Berhasil Hari Ini
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Total Berhasil',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xff64748B),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Text(
+                              '$todayTxCount',
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w900,
+                                color: Color(0xff10B981),
+                              ),
+                            ),
+                            const SizedBox(width: 4),
+                            const Text(
+                              'Transaksi',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xff475569),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
             // 1. Search Bar & Quick Filter Trigger Button
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),

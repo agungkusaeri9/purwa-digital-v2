@@ -18,6 +18,14 @@ class AppRoutes {
   static const String plnPascaForm = '/pln-pasca-form';
   static const String gameBrand = '/game-brand';
   static const String gameForm = '/game-form';
+  static const String ewalletBrand = '/ewallet-brand';
+  static const String ewalletForm = '/ewallet-form';
+  static const String bpjsMenu = '/bpjs-menu';
+  static const String bpjsForm = '/bpjs-form';
+  static const String pdamBrand = '/pdam-brand';
+  static const String pdamForm = '/pdam-form';
+  static const String internetBrand = '/internet-brand';
+  static const String internetForm = '/internet-form';
   static const String transactionDetail = '/transaction-detail';
   static const String startupPin = '/startup-pin';
 }

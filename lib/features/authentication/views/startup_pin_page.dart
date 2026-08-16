@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/router/app_routes.dart';
 import '../../../core/errors/app_exception.dart';
+import '../../../core/widgets/app_error_dialog.dart';
 import '../../ppob/viewmodels/pulsa_form_viewmodel.dart';
 
 class StartupPinPage extends ConsumerStatefulWidget {
@@ -77,18 +78,37 @@ class _StartupPinPageState extends ConsumerState<StartupPinPage> {
       } catch (e) {
         if (!mounted) return;
         
+        setState(() {
+          _isVerifying = false;
+          _pin = '';
+          _controller.clear();
+        });
+
         if (e is AppException && e.statusCode == 401) {
           context.go(AppRoutes.login);
           return;
         }
 
-        final errorMsg = e.toString().replaceAll('Exception: ', '');
+        final errorMsg = e is AppException
+            ? e.message
+            : e.toString().replaceAll('Exception: ', '');
+
+        final isConnectionError = errorMsg.contains('terhubung') ||
+            errorMsg.contains('koneksi') ||
+            errorMsg.contains('Connection') ||
+            errorMsg.contains('refused') ||
+            errorMsg.contains('Timeout');
+
+        final displayMessage = isConnectionError
+            ? errorMsg
+            : (errorMsg.contains('PIN') ? errorMsg : 'PIN yang Anda masukkan salah. Silakan coba lagi.');
+
         setState(() {
-          _isVerifying = false;
-          _errorMessage = errorMsg.contains('PIN') ? errorMsg : 'PIN yang Anda masukkan salah. Silakan coba lagi.';
-          _pin = '';
-          _controller.clear();
+          _errorMessage = displayMessage;
         });
+
+        // Show Red Toast Alert (floating banner)
+        showErrorToastAlert(context, displayMessage);
       }
     }
   }

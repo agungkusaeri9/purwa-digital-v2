@@ -98,19 +98,41 @@ class ApiClient {
     if (error is DioException) {
       final data = error.response?.data;
       if (data is Map<String, dynamic>) {
+        final errors = data['errors'];
+        if (errors != null && errors.toString().isNotEmpty && errors.toString() != 'null') {
+          return AppException(errors.toString(), statusCode: error.response?.statusCode);
+        }
         final message = data['message'] as String?;
         if (message != null && message.isNotEmpty) {
           return AppException(message, statusCode: error.response?.statusCode);
         }
-        final errors = data['errors'];
-        if (errors is String && errors.isNotEmpty) {
-          return AppException(errors, statusCode: error.response?.statusCode);
-        }
       }
+
+      if (error.type == DioExceptionType.connectionTimeout ||
+          error.type == DioExceptionType.sendTimeout ||
+          error.type == DioExceptionType.receiveTimeout) {
+        return const AppException(
+          'Koneksi waktu habis (Timeout). Silakan periksa koneksi internet Anda.',
+        );
+      }
+
+      if (error.type == DioExceptionType.connectionError ||
+          (error.message != null &&
+              (error.message!.contains('Connection refused') ||
+                  error.message!.contains('SocketException')))) {
+        return AppException(
+          'Gagal terhubung ke server (Connection Refused). Pastikan koneksi internet aktif dan server backend beroperasi.',
+          statusCode: error.response?.statusCode,
+        );
+      }
+
       return AppException(
         error.message ?? 'Terjadi kesalahan koneksi jaringan.',
         statusCode: error.response?.statusCode,
       );
+    }
+    if (error is AppException) {
+      return error;
     }
     return const AppException('Terjadi kesalahan yang tidak terduga.');
   }

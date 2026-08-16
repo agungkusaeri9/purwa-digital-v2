@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
+import '../../../../core/widgets/app_error_dialog.dart';
 import '../viewmodels/pln_pasca_form_viewmodel.dart';
 import 'widgets/transaction_status_modal.dart';
 import 'widgets/ppob_confirmation_sheet.dart';
@@ -90,13 +91,7 @@ class _PlnPascaFormPageState extends ConsumerState<PlnPascaFormPage> {
       plnPascaFormViewModelProvider.select((s) => s.errorMessage),
       (prev, next) {
         if (next != null && next.isNotEmpty) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(next),
-              backgroundColor: Colors.red,
-              behavior: SnackBarBehavior.floating,
-            ),
-          );
+          showErrorToastAlert(context, next);
         }
       },
     );

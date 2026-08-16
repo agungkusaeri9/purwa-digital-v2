@@ -8,6 +8,7 @@ import '../../../main/viewmodel/main_viewmodel.dart';
 import '../../../transaction/viewmodels/transaction_viewmodel.dart';
 import '../../../transaction/models/ppob_transaction_model.dart';
 import '../../../../core/router/app_routes.dart';
+import '../../../../core/widgets/app_error_dialog.dart';
 
 class TransactionStatusModal extends ConsumerStatefulWidget {
   final Future<String?> createFuture;
@@ -59,10 +60,12 @@ class _TransactionStatusModalState extends ConsumerState<TransactionStatusModal>
       });
     } catch (e) {
       if (mounted) {
+        final errorMsg = e.toString().replaceAll('Exception: ', '');
         setState(() {
           _isLoading = false;
-          _errorMessage = e.toString().replaceAll('Exception: ', '');
+          _errorMessage = errorMsg;
         });
+        showErrorToastAlert(context, errorMsg);
       }
     }
   }
@@ -82,14 +85,19 @@ class _TransactionStatusModalState extends ConsumerState<TransactionStatusModal>
         final status = tx.status.toLowerCase();
         if (status == 'success' || status == 'sukses' || status == 'failed' || status == 'gagal') {
           _timer?.cancel();
+          if (status == 'failed' || status == 'gagal') {
+            showErrorToastAlert(context, tx.message ?? 'Transaksi gagal diproses oleh provider.');
+          }
         }
       }
     } catch (e) {
       if (mounted) {
+        final errorMsg = e.toString().replaceAll('Exception: ', '');
         setState(() {
-          _errorMessage = e.toString().replaceAll('Exception: ', '');
+          _errorMessage = errorMsg;
           _isLoading = false;
         });
+        showErrorToastAlert(context, errorMsg);
       }
     }
   }
@@ -260,7 +268,7 @@ class _TransactionStatusModalState extends ConsumerState<TransactionStatusModal>
                       padding: const EdgeInsets.symmetric(vertical: 14),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
                     ),
-                    child: const Text('Tutup (Proses di Latar Belakang)', style: TextStyle(fontWeight: FontWeight.bold)),
+                    child: const Text('Tutup', style: TextStyle(fontWeight: FontWeight.bold)),
                   ),
                 ),
               ],
